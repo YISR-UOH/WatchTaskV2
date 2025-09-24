@@ -5,7 +5,7 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: "/WatchTask/",
+  base: "/WatchTaskV2/",
   build: {
     outDir: "dist",
     chunkSizeWarningLimit: 5 * 1024 * 1024,
