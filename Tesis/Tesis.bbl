@@ -1,0 +1,12 @@
+\begin{thebibliography}{}
+
+\bibitem[Michael B.~Jones, 2015]{rfc7519}
+Michael B.~Jones, John~Bradley, N.~S. (2015).
+\newblock {JSON Web Token (JWT)}.
+\newblock RFC 7519.
+
+\bibitem[Smith, 2011]{rfc7520}
+Smith, B. (2011).
+\newblock The book of bob.
+
+\end{thebibliography}

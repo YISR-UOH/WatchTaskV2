@@ -1,4 +1,8 @@
-// script para conectarse a firebase, usando las variables de entorno
+/**
+ * @file firebaseConfig.js
+ * @description Configuración e inicialización de Firebase.
+ * @date 24-09-2025
+ */
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 
@@ -12,6 +16,5 @@ const firebaseConfig = {
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 };
 
-// Initialize Firebase
 export const FirebaseAPP = initializeApp(firebaseConfig);
 export const db = getDatabase(FirebaseAPP);

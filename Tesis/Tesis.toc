@@ -1,0 +1,10 @@
+\babel@toc {spanish}{}\relax 
+\contentsline {chapter}{Introducción}{1}{chapter*.4}%
+\contentsline {chapter}{Objetivos}{2}{chapter*.5}%
+\contentsline {section}{Objetivos General}{2}{section*.6}%
+\contentsline {section}{Objetivos Específico}{3}{section*.7}%
+\contentsline {chapter}{Hipótesis de Trabajo}{4}{chapter*.8}%
+\contentsline {chapter}{Alcance}{5}{chapter*.9}%
+\contentsline {chapter}{Metodología}{7}{chapter*.11}%
+\contentsline {chapter}{Glosario de Términos}{11}{appendix*.15}%
+\contentsline {chapter}{Bibliografia}{12}{appendix*.16}%

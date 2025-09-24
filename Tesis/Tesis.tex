@@ -1,0 +1,119 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{xcolor}
+\definecolor{uoh}{RGB}{79,131,198}
+
+
+\geometry{left=3cm,right=2.5cm,top=2cm,bottom=2.5cm}
+\setstretch{1.5}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\includegraphics[width=0.3\textwidth]{data/logo.png}\par}
+    %color azul para texto en latex 
+    
+
+
+    {\Large\sffamily\textcolor{uoh}{Facultad de Ingeniería Civil en Computación}\par}
+    \vspace{3cm}
+    {\huge\bfseries Título de la Tesis \par}
+    \vspace{5cm}
+
+    {\normalsize Autor: Yerko Ignacio Sepúlveda Rojas \par}
+    {\normalsize Profesor Guía: Carol Moraga Quinteros \par}
+    \vspace{4cm}
+    {\normalsize Memoria para optar al título de Ingeniería Civil en Computación \par}
+    \vfill
+    {\normalsize Rancagua, Chile \par}
+    {\normalsize Julio, 2025 \par}
+\end{titlepage}
+\pagenumbering{roman} 
+\tableofcontents
+\listoffigures
+\listoftables
+
+\clearpage
+\pagenumbering{arabic} % Números arábigos desde aquí
+
+\chapter*{Introducción}
+\addcontentsline{toc}{chapter}{Introducción}
+\setcounter{page}{1}   % Empieza desde la página 1
+
+En el entorno industrial actual, el mantenimiento preventivo y correctivo representa un factor crítico para garantizar la continuidad operacional y la optimización de recursos. Las empresas manufactureras enfrentan desafíos constantes relacionados con la planificación, ejecución y seguimiento de tareas de mantenimiento, especialmente cuando se trata de coordinar múltiple personal y gestiónar extensos procedimientos operativos.
+El presente proyecto surge de la necesidad identificada en CARTOCOR, una empresa del sector industrial dedicada a la manufactura de cartón, donde se evidencia la ausencia de un sistema digitalizado para la gestión y seguimiento de ordenes de mantenimiento. La organización mantiene sus procedimientos operativos en formatos tradicionales (papel) con el apoyo de un servicio que no les da las herramientas requeridas (JD Edwards), lo que genera ineficiencia en la asignación de tareas, debido a que, la distribución manual de pautas de mantenimiento entre el personal resulta en tiempos muertos, mala gestión de cargas de trabajo y falta de visibilidad sobre el estado de las tareas. Tambien dificultad en el seguimiento en tiempo real sobre el estado de las tareas asignadas lo cual compromete la planificación operativa, los resultados de mantenimiento y la capacidad de respuesta ante imprevistos. Finalmente la inexistencia de trazabilidad en el tiempo impide hacer seguimiento a las órdenes de mantenimiento lo cual dificulta la identificación de patrones de fallas, el problema no siempre es de la máquina; también puede ser humano. Además la trazabilidad puede permitir identificar si los tiempos estimados se cumplen o no, y si es necesario ajustar los tiempos de las tareas de mantenimiento para ser mas realistas.
+
+Debido a esto, la empresa requiere una plataforma que se adapte a sus necesidades operativas, que permita la digitalización de sus procedimientos de mantenimiento, la asignación eficiente de tareas, el seguimiento en tiempo real y la trazabilidad de las órdenes de mantenimiento, con ello buscar modernizar sus procesos y mejorar la planificación operativa.
+
+
+\chapter*{Objetivos}
+\addcontentsline{toc}{chapter}{Objetivos}
+
+\section*{Objetivo General}
+\addcontentsline{toc}{section}{Objetivos General}
+El objetivo de este proyecto es desarrollar e implementar una plataforma web que se integre con las plataformas existentes en la empresa, facilitando los procesos de gestión del mantenimiento y mejorando la eficiencia operativa, tambien que permita la trazabilidad en tiempo real sobre las tareas de mantenimiento y obtener datos historicos de los procesos. La solución propuesta incluye el desarrollo de una API RESTful utilizando FastAPI, un sistema de autenticación robusto con tokens JWT (RFC 7519 \cite{rfc7519}), y una interfaz web responsive que se adapte a múltiples dispositivos que permite la gestión de pautas, asignación y seguimiento de procedimientos de mantenimiento.
+\newpage
+\section*{Objetivo Específico}
+\addcontentsline{toc}{section}{Objetivos Específico}
+
+\begin{enumerate}
+    \item Adaptar y digitalizar los procedimientos operativos de mantenimiento existentes en CARTOCOR, transformando los formatos tradicionales en un sistema digitalizado que permita una gestión más eficiente, segura y trazable.
+    \item Diseñar y desarrollar una API RESTful utilizando FastAPI que proporcione servicios de autenticación, gestión de usuarios, administración de pautas de mantenimiento y gestión de órdenes de mantenimiento, garantizando la seguridad y escalabilidad del sistema.
+    \item Implementar un sistema de autenticación robusto con tokens JWT (RFC 7519 \cite{rfc7519}) que permita la diferenciación de tipos de usuario (supervisores y mantenedores) y garantice la seguridad en el acceso a la información sensible.
+    \item Implementar un sistema de autenticación robusto con tokens JWT (RFC 7519 \cite{rfc7520}) que permita la diferenciación de tipos de usuario (supervisores y mantenedores) y garantice la seguridad en el acceso a la información sensible.
+    \item Crear una interfaz web responsive utilizando tecnologías modernas que se adapte a múltiples dispositivos y proporcione una experiencia de usuario optimizada para entornos industriales.
+    \item Desarrollar un módulo de gestión de pautas que permita la visualización, asignación, seguimiento y realizacion de procedimientos de mantenimiento.
+    \item Establecer una arquitectura escalable que facilite futuras expansiones del sistema y la integración con otros sistemas empresariales.
+\end{enumerate}
+
+\chapter*{Hipótesis de Trabajo}
+\addcontentsline{toc}{chapter}{Hipótesis de Trabajo}
+La implementación de una solución tecnológica que se integre con las plataformas existentes en la empresa en el area de gestión mantenimiento de CARTOCOR permitirá mejorar significativamente la eficiencia operativa, la trazabilidad de las tareas y la planificación de mantenimiento, al proporcionar un sistema que optimiza la asignación de tareas, permite el seguimiento en tiempo real y garantiza la seguridad de la información a través de una API robusta y una interfaz responsive.
+
+
+\chapter*{Alcance}
+\addcontentsline{toc}{chapter}{Alcance}
+El sistema a desarrollar abarca la gestión completa del ciclo de vida de las órdenes de mantenimiento, desde su creación y asignación hasta su ejecución y trazabilidad en el tiempo. Se incluye la implementación de un backend completo con base de datos SQL y almacenamiento de órdenes en BSON, servicios web y un frontend moderno con capacidades responsive para múltiples dispositivos.
+
+El proyecto no incluye la integración directa con sistemas ERP existentes, aunque la arquitectura estara diseñada para un facil acoplamiente con las plataformas existentes en Cartocor.
+
+\chapter*{Marco Teórico}
+
+
+\chapter*{Metodología}
+\addcontentsline{toc}{chapter}{Metodología}
+El desarrollo del proyecto sigue una metodología ágil, implementando un enfoque de desarrollo full-stack que integra tecnologías backend modernas (FastAPI, SQLModel, NoSQL) con frameworks frontend contemporáneos, garantizando tanto la funcionalidad como la usabilidad del sistema resultante.
+
+\chapter*{Resultados}
+
+
+\chapter*{Conclusiones}
+
+
+\appendix
+\chapter*{Apéndice}
+
+
+\chapter*{Glosario de Términos}
+\addcontentsline{toc}{chapter}{Glosario de Términos}
+\begin{itemize}
+    \item API: Interfaz de Programación de Aplicaciones, un conjunto de definiciones y protocolos que permiten la comunicación entre diferentes sistemas.
+    \item JWT: JSON Web Token, un estándar abierto (RFC 7519 \cite{rfc7519}) que define un formato compacto y autónomo para transmitir información entre partes como un objeto JSON.
+    \item FastAPI: Un framework moderno y rápido (alto rendimiento) para construir APIs con Python 3.6+ basado en estándares como OpenAPI y JSON Schema.
+    \item SQLModel: Una biblioteca de Python que combina las capacidades de SQLAlchemy y Pydantic para facilitar la creación de modelos de datos y la interacción con bases de datos SQL.
+    \item BSON: Binary JSON, un formato de serialización de datos que extiende JSON para incluir tipos de datos adicionales y es utilizado por MongoDB para almacenar documentos.
+    \item Responsive: Diseño web que permite que las aplicaciones se adapten a diferentes tamaños de pantalla y dispositivos, proporcionando una experiencia de usuario óptima en móviles, tablets y desktops.
+\end{itemize}
+
+
+\bibliographystyle{apalike}
+\bibliography{Bibliografia}
+\addcontentsline{toc}{chapter}{Bibliografia}
+\end{document}
