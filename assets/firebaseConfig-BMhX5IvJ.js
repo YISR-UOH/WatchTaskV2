@@ -1,1 +1,0 @@
-import{n as e,t}from"./index-C4go_Ls_.js";export{t as FirebaseAPP,e as db};
