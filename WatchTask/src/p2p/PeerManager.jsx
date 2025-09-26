@@ -11,6 +11,7 @@ import {
   off,
   onDisconnect,
 } from "firebase/database";
+import adapter from "webrtc-adapter";
 
 export default function PeerManager() {
   // Configuración
@@ -18,6 +19,21 @@ export default function PeerManager() {
     Number.parseInt(import.meta.env.VITE_PEER_CONNECT_BACKOFF_MS, 10) || 15000; // ms
   const PING_INTERVAL_MS =
     Number.parseInt(import.meta.env.VITE_PEER_PING_INTERVAL_MS, 10) || 5000; // ms
+  // STUN servers (configurable por env, con defaults múltiples)
+  const STUN_URLS = (
+    import.meta.env.VITE_STUN_URLS ||
+    [
+      "stun:stun.l.google.com:19302",
+      "stun:stun1.l.google.com:19302",
+      "stun:stun2.l.google.com:19302",
+      "stun:stun3.l.google.com:19302",
+      "stun:stun4.l.google.com:19302",
+    ].join(",")
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const ICE_SERVERS = STUN_URLS.map((u) => ({ urls: u }));
 
   const [peerId, setPeerId] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -35,6 +51,8 @@ export default function PeerManager() {
   const pendingConnectSetRef = useRef(new Set()); // peers a reintentar cuando vuelva la red
   const previousPeersRef = useRef(new Set()); // histórico de peers vistos/conectados
   const selfDbRefRef = useRef(null); // referencia a nuestra presencia en RTDB
+  const attemptCountsRef = useRef({}); // número de intentos por peer
+  // Nota: solo STUN + ICE, TUNR aun no es necesario.
 
   const dlog = (...args) => {
     const line = `[${new Date().toLocaleTimeString()}] ${args
@@ -161,10 +179,13 @@ export default function PeerManager() {
   const ensurePeerConnection = (remoteId) => {
     let conn = connectionsRef.current[remoteId];
     if (conn && conn.pc) return conn;
-
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    dlog(
+      "RTCPeerConnection creada",
+      remoteId,
+      "iceServers=",
+      ICE_SERVERS.map((s) => s.urls).join("|")
+    );
 
     const pendingCandidates = [];
 
@@ -195,6 +216,14 @@ export default function PeerManager() {
         if (peersSetRef.current.has(remoteId)) scheduleConnect(remoteId);
       }
       dlog("connectionState", remoteId, pc.connectionState);
+      if (pc.connectionState === "failed") {
+        dlog(
+          "Conexión failed con",
+          remoteId,
+          "intentos=",
+          attemptCountsRef.current[remoteId] || 0
+        );
+      }
     };
 
     pc.oniceconnectionstatechange = () => {
@@ -268,6 +297,7 @@ export default function PeerManager() {
       startPing(remoteId);
       previousPeersRef.current.add(remoteId);
       dlog("DataChannel abierto con", remoteId);
+      attemptCountsRef.current[remoteId] = 0;
     };
 
     dc.onclose = () => {
@@ -343,6 +373,11 @@ export default function PeerManager() {
       return;
     }
     if (connectionsRef.current[remoteId]?.pc) return; // ya iniciando o conectado
+    // Incrementar contador de intentos
+    attemptCountsRef.current[remoteId] =
+      (attemptCountsRef.current[remoteId] || 0) + 1;
+    const attempts = attemptCountsRef.current[remoteId];
+    dlog("Intento #", attempts, "con", remoteId);
     const { pc } = ensurePeerConnection(remoteId);
 
     // Crear canal de datos y configurarlo
@@ -575,6 +610,7 @@ export default function PeerManager() {
                 const scheduled = !!connectTimersRef.current[rid];
                 const pc = conn?.pc;
                 const dc = conn?.dc;
+                const attempts = attemptCountsRef.current[rid] || 0;
                 return (
                   <li key={rid} className="border rounded p-2">
                     <div className="flex items-center justify-between">
@@ -582,6 +618,9 @@ export default function PeerManager() {
                         <div className="font-mono text-sm">{rid}</div>
                         <div className="text-xs text-gray-500">
                           {scheduled ? "Intento programado…" : "Sin intento"}
+                          {attempts > 0 && (
+                            <span className="ml-2">intentos: {attempts}</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">
