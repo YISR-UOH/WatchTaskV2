@@ -11,10 +11,10 @@ export default function PeerDebugPanel() {
     peerRTT,
     debugLog,
     debugOpen,
-    closeDebug,
     connectToPeer,
     scheduleConnect,
     setDebugLog,
+    requestUsersSnapshot,
   } = usePeer();
 
   if (!debugOpen) return null;
@@ -80,7 +80,7 @@ export default function PeerDebugPanel() {
           {peers.length === 0 ? (
             <p className="muted mt-1">No hay peers disponibles.</p>
           ) : (
-            <ul className="divide-y">
+            <ul className="divide-y h-38 overflow-auto">
               {peers.map((rid) => (
                 <li key={rid} className="py-1.5">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -125,7 +125,7 @@ export default function PeerDebugPanel() {
                     const { ref, remove } = await import("firebase/database");
                     const { db } = await import("@/utils/firebaseConfig");
                     await remove(ref(db, `signals/${peerId}`));
-                  } catch (e) {}
+                  } catch {}
                 }}
               >
                 Limpiar señales
@@ -135,6 +135,12 @@ export default function PeerDebugPanel() {
                 onClick={() => setDebugLog([])}
               >
                 Limpiar log
+              </button>
+              <button
+                className="btn btn-primary px-2 py-1 text-[11px]"
+                onClick={() => requestUsersSnapshot()}
+              >
+                Pedir usuarios
               </button>
             </div>
           </div>
