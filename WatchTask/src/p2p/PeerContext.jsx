@@ -26,17 +26,17 @@ import {
   applyOrdersSnapshot,
   getUsersMeta,
   getOrdersMeta,
+  getOrdersSnapshotForUser,
 } from "@/utils/APIdb";
-import pako from "pako";
+import pako from "pako"; // For compression/decompression
 
 const PeerContext = createContext(null);
 
 // Efficient data sending constants
 const COMPRESSION_THRESHOLD = 1024; // Compress payloads larger than 1KB
-const MAX_CHUNK_SIZE = 64 * 1024; // 64KB chunks (well under typical MTU)
+const MAX_CHUNK_SIZE = 64 * 1024; // 64KB chunks (**MTU)
 const COMPRESSION_LEVEL = 6; // Balanced compression speed/ratio
 
-// Utility functions for efficient data sending
 const compressData = (data) => {
   try {
     const jsonString = JSON.stringify(data);
@@ -46,7 +46,6 @@ const compressData = (data) => {
     const compressed = pako.gzip(jsonString, { level: COMPRESSION_LEVEL });
     return { data: compressed, compressed: true };
   } catch {
-    // Fallback to uncompressed
     return { data: JSON.stringify(data), compressed: false };
   }
 };
@@ -464,25 +463,45 @@ export function PeerProvider({ children }) {
           isHierarchyAllowed(me, remoteHello.user) &&
           localOrdersVersion > remoteOrdersVersion
         ) {
-          const specialityToSend =
-            remoteHello.user?.speciality ?? me.speciality ?? null;
-          // Always attempt to send - speciality null will send all orders
-          getOrdersSnapshotForSpeciality(specialityToSend)
-            .then((ordersSnap) => {
-              const orders = ordersSnap.orders || [];
-              if (!orders.length) return;
-              sendEfficientData(remoteId, ordersSnap, "ordersSnapshot", {
-                fromAuth: true,
-                speciality: specialityToSend,
-              });
-            })
-            .catch((err) => dlog("broadcastSync orders error", String(err)));
+          if (remoteHello.user?.role === "mantenedor") {
+            // Send only assigned orders to maintainers
+            getOrdersSnapshotForUser(remoteHello.user.code)
+              .then((ordersSnap) => {
+                const orders = ordersSnap.orders || [];
+                if (!orders.length) return;
+                sendEfficientData(remoteId, ordersSnap, "ordersSnapshot", {
+                  fromAuth: true,
+                  userCode: remoteHello.user.code,
+                });
+              })
+              .catch((err) => dlog("broadcastSync orders error", String(err)));
+          } else {
+            // Send all orders of speciality to supervisors/admins
+            const specialityToSend =
+              remoteHello.user?.speciality ?? me.speciality ?? null;
+            getOrdersSnapshotForSpeciality(specialityToSend)
+              .then((ordersSnap) => {
+                const orders = ordersSnap.orders || [];
+                if (!orders.length) return;
+                sendEfficientData(remoteId, ordersSnap, "ordersSnapshot", {
+                  fromAuth: true,
+                  speciality: specialityToSend,
+                });
+              })
+              .catch((err) => dlog("broadcastSync orders error", String(err)));
+          }
         }
       });
     } catch (err) {
       dlog("broadcastSync error", String(err));
     }
-  }, [dlog, isHierarchyAllowed, sendEfficientData]);
+  }, [
+    dlog,
+    isHierarchyAllowed,
+    sendEfficientData,
+    getOrdersSnapshotForUser,
+    getOrdersSnapshotForSpeciality,
+  ]);
 
   const requestUsersSnapshot = useCallback(() => {
     Object.keys(connectionsRef.current || {}).forEach((remoteId) => {
@@ -602,7 +621,7 @@ export function PeerProvider({ children }) {
         flushQueue(remoteId);
         if (authUserRef.current) {
           sendUsersSnapshotToPeer(remoteId).catch(() => {});
-          broadcastSync().catch(() => {});
+          // Removed broadcastSync to avoid sending all orders automatically
         } else {
           sendJSON(remoteId, { type: "requestUsersSnapshot" });
         }
@@ -645,21 +664,7 @@ export function PeerProvider({ children }) {
               cleanupConnection(remoteId);
               return;
             }
-            if (authUserRef.current && msg?.auth) {
-              const remoteOrders = msg.ordersVersion || 0;
-              getOrdersMeta()
-                .then((meta) => {
-                  const localVersion = meta?.version || 0;
-                  if (localVersion > remoteOrders) {
-                    const specialityToSend =
-                      msg.user?.speciality ?? authUserRef.current.speciality;
-                    sendOrdersSnapshotToPeer(remoteId, specialityToSend).catch(
-                      () => {}
-                    );
-                  }
-                })
-                .catch(() => {});
-            }
+            // Removed automatic order sending on hello
             return;
           }
           if (msg.type === "dataChunk") {
@@ -1053,7 +1058,7 @@ export function PeerProvider({ children }) {
         pending.forEach((remoteId) => {
           sendUsersSnapshotToPeer(remoteId).catch(() => {});
         });
-        broadcastSync().catch(() => {});
+        // Removed broadcastSync to avoid automatic order sending
       }
     },
     [broadcastSync, sendHelloToPeer, sendUsersSnapshotToPeer]
@@ -1297,7 +1302,7 @@ export function PeerProvider({ children }) {
     const handleOrdersChanged = (event) => {
       const reason = event?.detail?.reason;
       if (!authUserRef.current || reason === "snapshot-applied") return;
-      broadcastSync().catch(() => {});
+      // Removed broadcastSync to avoid automatic sending
     };
     window.addEventListener("orders:changed", handleOrdersChanged);
     let bc;
@@ -1318,11 +1323,36 @@ export function PeerProvider({ children }) {
         bc.close();
       }
     };
-  }, [broadcastSync]);
+  }, []);
 
   useEffect(() => {
     peers.forEach((remoteId) => scheduleConnect(remoteId));
   }, [peers, scheduleConnect]);
+
+  const sendOrdersToUser = useCallback(
+    async (userCode) => {
+      if (!authUserRef.current) return false;
+      const remoteIds = Object.keys(remoteInfoRef.current || {});
+      for (const remoteId of remoteIds) {
+        const remoteHello = remoteInfoRef.current[remoteId]?.hello;
+        if (remoteHello?.user?.code === userCode) {
+          try {
+            const snap = await getOrdersSnapshotForUser(userCode);
+            return sendEfficientData(remoteId, snap, "ordersSnapshot", {
+              fromAuth: true,
+              userCode,
+            });
+          } catch (err) {
+            dlog("sendOrdersToUser error", String(err));
+            return false;
+          }
+        }
+      }
+      dlog("No se encontró peer para usuario", userCode);
+      return false;
+    },
+    [dlog, sendEfficientData]
+  );
 
   const value = useMemo(
     () => ({
@@ -1348,6 +1378,7 @@ export function PeerProvider({ children }) {
       setAuthUser: setAuthUserStable,
       broadcastSync,
       requestUsersSnapshot,
+      sendOrdersToUser,
     }),
     [
       ICE_SERVERS,
@@ -1368,6 +1399,7 @@ export function PeerProvider({ children }) {
       setAuthUserStable,
       broadcastSync,
       requestUsersSnapshot,
+      sendOrdersToUser,
     ]
   );
 

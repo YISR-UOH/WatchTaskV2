@@ -479,6 +479,14 @@ export async function getOrdersSnapshotForSpeciality(specialityId) {
   return { meta, orders };
 }
 
+export async function getOrdersSnapshotForUser(userCode) {
+  await initAPIDB();
+  const allOrders = await db.orders.toArray();
+  const orders = allOrders.filter((o) => o?.info?.asignado_a_code === userCode);
+  const meta = await getOrdersMeta();
+  return { meta, orders };
+}
+
 export async function applyOrdersSnapshot({ meta, orders }) {
   await initAPIDB();
   const localMeta = await getOrdersMeta();

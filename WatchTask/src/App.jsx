@@ -6,6 +6,7 @@ import PeerDebugPanel from "@/p2p/PeerDebugPanel";
 import { AuthProvider, useAuth } from "@/Context/AuthContext";
 import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/AdminDashboard";
+import SupervisorDashboard from "@/pages/SupervisorDashboard";
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -14,6 +15,15 @@ function ProtectedRoute({ children, roles }) {
   if (roles && !roles.includes(user.role))
     return <Navigate to="/login" replace />;
   return children;
+}
+
+function DefaultRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === "admin") return <Navigate to="/admin" replace />;
+  if (user.role === "supervisor") return <Navigate to="/supervisor" replace />;
+  return <Navigate to="/login" replace />;
 }
 function App() {
   const BASENAME = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "") || "/";
@@ -34,7 +44,15 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                <Route
+                  path="/supervisor"
+                  element={
+                    <ProtectedRoute roles={["supervisor"]}>
+                      <SupervisorDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<DefaultRedirect />} />
               </Routes>
               <PeerDebugPanel />
             </main>

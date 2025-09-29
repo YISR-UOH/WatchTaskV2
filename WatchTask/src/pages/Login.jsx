@@ -13,8 +13,11 @@ export default function Login() {
     e.preventDefault();
     setError("");
     const res = await login({ code, password });
-    if (res.ok) navigate("/admin");
-    else setError(res.error || "Error de autenticación");
+    if (res.ok) {
+      if (res.user.role === "admin") navigate("/admin");
+      else if (res.user.role === "supervisor") navigate("/supervisor");
+      else navigate("/login"); // Para otros roles sin vista
+    } else setError(res.error || "Error de autenticación");
   };
 
   return (

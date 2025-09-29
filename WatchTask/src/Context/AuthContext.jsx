@@ -55,7 +55,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem("auth.user", JSON.stringify(session));
         setAuthUser(session);
         emitAuthUserChanged(session);
-        return { ok: true };
+        return { ok: true, user: session };
       }
       return { ok: false, error: "Credenciales inválidas" };
     },
