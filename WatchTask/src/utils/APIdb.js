@@ -361,7 +361,7 @@ export async function fetchOrdersBySpeciality(specialityId) {
   await initAPIDB();
   const all = await db.orders.toArray();
   const sid = toInt(specialityId);
-  if (!Number.isFinite(sid)) return [];
+  if (!Number.isFinite(sid)) return all;
   return all.filter((o) => {
     const sp = o?.info?.["Especialidad_id"];
     return Number.isFinite(sp) && Number(sp) === sid;
@@ -444,7 +444,6 @@ export async function applyUsersSnapshot({ meta, users, sig }) {
     );
     if (sig && calc !== sig) {
       // signature mismatch - we still can choose to reject; for now, log only
-      // eslint-disable-next-line no-console
       console.warn("Users snapshot signature mismatch");
     }
   } catch {}
