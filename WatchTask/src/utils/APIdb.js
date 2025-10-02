@@ -368,6 +368,17 @@ export async function fetchOrdersBySpeciality(specialityId) {
   });
 }
 
+export async function fetchOrdersByAssignedUser(userCode) {
+  await initAPIDB();
+  const all = await db.orders.toArray();
+  const uid = toInt(userCode);
+  if (!Number.isFinite(uid)) return [];
+  return all.filter((o) => {
+    const assignedCode = o?.info?.asignado_a_code;
+    return Number.isFinite(assignedCode) && Number(assignedCode) === uid;
+  });
+}
+
 // Auth helpers
 export async function verifyRootAdmin(code, password) {
   await initAPIDB();

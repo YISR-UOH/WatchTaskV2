@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/Context/AuthContext";
 import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/AdminDashboard";
 import SupervisorDashboard from "@/pages/SupervisorDashboard";
+import MantenedorDashboard from "@/pages/MantenedorDashboard";
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -23,6 +24,7 @@ function DefaultRedirect() {
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === "admin") return <Navigate to="/admin" replace />;
   if (user.role === "supervisor") return <Navigate to="/supervisor" replace />;
+  if (user.role === "mantenedor") return <Navigate to="/mantenedor" replace />;
   return <Navigate to="/login" replace />;
 }
 function App() {
@@ -49,6 +51,14 @@ function App() {
                   element={
                     <ProtectedRoute roles={["supervisor"]}>
                       <SupervisorDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/mantenedor"
+                  element={
+                    <ProtectedRoute roles={["mantenedor"]}>
+                      <MantenedorDashboard />
                     </ProtectedRoute>
                   }
                 />

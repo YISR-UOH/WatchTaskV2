@@ -131,6 +131,7 @@ export function PeerProvider({ children }) {
   const politeRef = useRef({});
   const attemptCountsRef = useRef({});
   const selfDbRefRef = useRef(null);
+  const blockedPeersRef = useRef(new Set()); // New: track blocked peers to prevent reconnection attempts
 
   const authUserRef = useRef(null);
   const pendingUsersRequestsRef = useRef(new Set());
@@ -553,6 +554,7 @@ export function PeerProvider({ children }) {
         delete accumulatingChunksRef.current[key];
       }
     });
+    // Note: Don't remove from blockedPeersRef here to prevent immediate reconnection attempts
   }, []);
 
   const setupDataChannel = useCallback(
@@ -660,7 +662,16 @@ export function PeerProvider({ children }) {
               msg?.auth &&
               !isHierarchyAllowed(authUserRef.current, msg.user)
             ) {
-              dlog("hierarchy bloqueada", remoteId);
+              dlog(
+                "hierarchy bloqueada",
+                remoteId,
+                "roles:",
+                authUserRef.current.role,
+                "->",
+                msg.user?.role
+              );
+              // Mark this peer as blocked to prevent reconnection attempts
+              blockedPeersRef.current.add(remoteId);
               cleanupConnection(remoteId);
               return;
             }
@@ -994,6 +1005,13 @@ export function PeerProvider({ children }) {
         return;
       }
       if (connectionsRef.current[remoteId]?.pc) return;
+
+      // Check if this peer is blocked due to hierarchy rules
+      if (blockedPeersRef.current.has(remoteId)) {
+        dlog("Conexión bloqueada por jerarquía", remoteId);
+        return;
+      }
+
       attemptCountsRef.current[remoteId] =
         (attemptCountsRef.current[remoteId] || 0) + 1;
       const { pc } = ensurePeerConnection(remoteId);
@@ -1019,6 +1037,13 @@ export function PeerProvider({ children }) {
       }
       if (connectTimersRef.current[remoteId]) return;
       if (connectionsRef.current[remoteId]) return;
+
+      // Don't schedule connection if peer is blocked
+      if (blockedPeersRef.current.has(remoteId)) {
+        dlog("Conexión no programada - peer bloqueado", remoteId);
+        return;
+      }
+
       const delayMs = Math.floor(Math.random() * (BACKOFF_MAX + 1));
       connectTimersRef.current[remoteId] = setTimeout(() => {
         connectToPeer(remoteId);
@@ -1040,6 +1065,18 @@ export function PeerProvider({ children }) {
             prev.speciality === nextUser.speciality &&
             prev.name === nextUser.name));
       if (same) return;
+
+      // Clear blocked peers when user changes (role change may allow new connections)
+      if (!same && prev?.role !== nextUser?.role) {
+        dlog(
+          "Usuario cambió de rol, limpiando peers bloqueados",
+          prev?.role,
+          "->",
+          nextUser?.role
+        );
+        blockedPeersRef.current.clear();
+      }
+
       authUserRef.current = nextUser || null;
       if (selfDbRefRef.current) {
         update(selfDbRefRef.current, {
@@ -1061,7 +1098,7 @@ export function PeerProvider({ children }) {
         // Removed broadcastSync to avoid automatic order sending
       }
     },
-    [broadcastSync, sendHelloToPeer, sendUsersSnapshotToPeer]
+    [broadcastSync, sendHelloToPeer, sendUsersSnapshotToPeer, dlog]
   );
 
   useEffect(() => {
@@ -1354,6 +1391,25 @@ export function PeerProvider({ children }) {
     [dlog, sendEfficientData]
   );
 
+  const unblockPeer = useCallback(
+    (remoteId) => {
+      if (blockedPeersRef.current.has(remoteId)) {
+        dlog("Desbloqueando peer", remoteId);
+        blockedPeersRef.current.delete(remoteId);
+        return true;
+      }
+      return false;
+    },
+    [dlog]
+  );
+
+  const clearBlockedPeers = useCallback(() => {
+    const count = blockedPeersRef.current.size;
+    dlog("Limpiando todos los peers bloqueados", count);
+    blockedPeersRef.current.clear();
+    return count;
+  }, [dlog]);
+
   const value = useMemo(
     () => ({
       ICE_SERVERS,
@@ -1379,6 +1435,9 @@ export function PeerProvider({ children }) {
       broadcastSync,
       requestUsersSnapshot,
       sendOrdersToUser,
+      unblockPeer,
+      clearBlockedPeers,
+      dlog, // Expose debug logger for manual debugging
     }),
     [
       ICE_SERVERS,
@@ -1400,6 +1459,9 @@ export function PeerProvider({ children }) {
       broadcastSync,
       requestUsersSnapshot,
       sendOrdersToUser,
+      unblockPeer,
+      clearBlockedPeers,
+      dlog,
     ]
   );
 

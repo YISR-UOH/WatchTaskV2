@@ -16,6 +16,7 @@ export default function Login() {
     if (res.ok) {
       if (res.user.role === "admin") navigate("/admin");
       else if (res.user.role === "supervisor") navigate("/supervisor");
+      else if (res.user.role === "mantenedor") navigate("/mantenedor");
       else navigate("/login"); // Para otros roles sin vista
     } else setError(res.error || "Error de autenticación");
   };

@@ -15,6 +15,8 @@ export default function PeerDebugPanel() {
     scheduleConnect,
     setDebugLog,
     requestUsersSnapshot,
+    unblockPeer,
+    clearBlockedPeers,
   } = usePeer();
 
   if (!debugOpen) return null;
@@ -111,6 +113,24 @@ export default function PeerDebugPanel() {
               ))}
             </ul>
           )}
+        </section>
+
+        <section className="card p-2">
+          <div className="flex items-center justify-between mb-2">
+            <div className="heading mb-0 text-sm">Jerarquía P2P</div>
+            <button
+              className="btn btn-outline px-2 py-1 text-[11px]"
+              onClick={() => {
+                const count = clearBlockedPeers();
+                alert(`${count} peers desbloqueados`);
+              }}
+            >
+              Desbloquear todos
+            </button>
+          </div>
+          <div className="text-[10px] text-gray-600 mb-2">
+            Reglas: admin↔supervisor, mantenedor↔supervisor
+          </div>
         </section>
 
         <section className="card p-2">
