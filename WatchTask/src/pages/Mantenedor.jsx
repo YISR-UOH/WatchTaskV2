@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useEffectEvent } from "react";
-import ComponentOrder from "@/components/component_order";
+import ListOrder from "@/components/component_listOrder";
 import { useAuth } from "@/Context/AuthContext";
 import { fetchOrdersByAssignedUser } from "@/utils/APIdb";
 import { unstable_Activity, Activity as ActivityStable } from "react";
@@ -10,12 +10,25 @@ export default function Mantenedor() {
   const [orders, setOrders] = useState([]);
   const onloadOrders = useEffectEvent((listOrders) => {
     if (listOrders == [] || !listOrders) return;
-    const ordersData = listOrders.map((order) => ({
-      code: order.code,
-      tasks: order.tasks || [],
-      protocols: order.protocolos || [],
-      description: order.info.Descripcion || "",
-    }));
+    const ordersData = listOrders.map((order) => {
+      const tasks = order?.tasks ?? {};
+      const taskData = Array.isArray(tasks.data) ? tasks.data : [];
+      const tasksTotal = Number.isFinite(tasks?.Tasks_N)
+        ? tasks.Tasks_N
+        : taskData.length;
+      const protocolos = Array.isArray(order?.protocolos)
+        ? order.protocolos
+        : [];
+      return {
+        code: order.code,
+        tasks: { data: taskData, Tasks_N: tasksTotal },
+        protocolos,
+        description: order.info?.Descripcion || "",
+        unidad: order.info?.["N Unidad"] || "",
+        info: order.info || {},
+        fullOrder: order,
+      };
+    });
     setOrders(ordersData);
   });
 
@@ -31,10 +44,8 @@ export default function Mantenedor() {
 
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Mantenedor Page</h1>
-      <p>Contenido del Mantenedor.</p>
       <Activity mode={orders ? "visible" : "hidden"}>
-        <ComponentOrder orders={orders} />
+        <ListOrder orders={orders} />
       </Activity>
     </div>
   );

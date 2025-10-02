@@ -379,6 +379,13 @@ export async function fetchOrdersByAssignedUser(userCode) {
   });
 }
 
+export async function getOrderByCode(orderCode) {
+  await initAPIDB();
+  const code = toInt(orderCode);
+  if (!Number.isFinite(code)) return null;
+  return db.orders.get(code);
+}
+
 // Auth helpers
 export async function verifyRootAdmin(code, password) {
   await initAPIDB();
