@@ -496,13 +496,7 @@ export function PeerProvider({ children }) {
     } catch (err) {
       dlog("broadcastSync error", String(err));
     }
-  }, [
-    dlog,
-    isHierarchyAllowed,
-    sendEfficientData,
-    getOrdersSnapshotForUser,
-    getOrdersSnapshotForSpeciality,
-  ]);
+  }, []); // Remove dependencies to prevent infinite re-renders
 
   const requestUsersSnapshot = useCallback(() => {
     Object.keys(connectionsRef.current || {}).forEach((remoteId) => {
@@ -981,7 +975,6 @@ export function PeerProvider({ children }) {
       };
     },
     [
-      broadcastSync,
       canSendOrdersTo,
       cleanupConnection,
       dlog,
@@ -1091,6 +1084,9 @@ export function PeerProvider({ children }) {
     [dlog, ensurePeerConnection, peerId]
   );
 
+  const connectToPeerRef = useRef();
+  connectToPeerRef.current = connectToPeer;
+
   const scheduleConnect = useCallback(
     (remoteId) => {
       if (!isOnlineRef.current) {
@@ -1102,17 +1098,16 @@ export function PeerProvider({ children }) {
 
       // Don't schedule connection if peer is blocked
       if (blockedPeersRef.current.has(remoteId)) {
-        dlog("Conexión no programada - peer bloqueado", remoteId);
-        return;
+        return; // Don't log here to avoid spam
       }
 
       const delayMs = Math.floor(Math.random() * (BACKOFF_MAX + 1));
       connectTimersRef.current[remoteId] = setTimeout(() => {
-        connectToPeer(remoteId);
+        connectToPeerRef.current(remoteId);
         delete connectTimersRef.current[remoteId];
       }, delayMs);
     },
-    [BACKOFF_MAX, connectToPeer]
+    [BACKOFF_MAX] // Only depend on BACKOFF_MAX
   );
 
   const setAuthUserStable = useCallback(
@@ -1160,7 +1155,7 @@ export function PeerProvider({ children }) {
         // Removed broadcastSync to avoid automatic order sending
       }
     },
-    [broadcastSync, sendHelloToPeer, sendUsersSnapshotToPeer, dlog]
+    [sendHelloToPeer, sendUsersSnapshotToPeer, dlog]
   );
 
   useEffect(() => {
@@ -1252,6 +1247,13 @@ export function PeerProvider({ children }) {
         await remove(snapshot.ref);
         return;
       }
+
+      // Skip processing if peer is blocked
+      if (blockedPeersRef.current.has(from)) {
+        await remove(snapshot.ref);
+        return;
+      }
+
       const conn = ensurePeerConnection(from);
       const pc = conn.pc;
       try {
@@ -1319,29 +1321,34 @@ export function PeerProvider({ children }) {
             const stateBeforeAnswer = pc.signalingState;
             if (stateBeforeAnswer !== "have-local-offer") {
               dlog("ignorar answer", from, "estado", stateBeforeAnswer);
-            } else {
-              try {
-                await pc.setRemoteDescription(sdp);
-              } catch (err) {
-                dlog("remote answer error", from, String(err));
-                return;
-              }
-              if (conn.pendingCandidates?.length) {
-                const pending = [...conn.pendingCandidates];
-                conn.pendingCandidates = [];
-                for (const candidate of pending) {
-                  try {
-                    await pc.addIceCandidate(new RTCIceCandidate(candidate));
-                  } catch (err) {
-                    dlog("ICE diferido error", String(err));
-                  }
+              await remove(snapshot.ref);
+              return;
+            }
+            try {
+              await pc.setRemoteDescription(sdp);
+            } catch (err) {
+              dlog("remote answer error", from, String(err));
+              return;
+            }
+            if (conn.pendingCandidates?.length) {
+              const pending = [...conn.pendingCandidates];
+              conn.pendingCandidates = [];
+              for (const candidate of pending) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (err) {
+                  dlog("ICE diferido error", String(err));
                 }
               }
             }
           }
         } else if (data.candidate) {
           if (pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } catch (err) {
+              dlog("ICE candidate error", from, String(err));
+            }
           } else {
             conn.pendingCandidates.push(data.candidate);
           }
@@ -1357,7 +1364,7 @@ export function PeerProvider({ children }) {
         off(refToOff, "child_added", cb);
       }
     };
-  }, [dlog, ensurePeerConnection, peerId]);
+  }, [peerId]); // Only depend on peerId to prevent re-creation
 
   useEffect(() => {
     const handler = (event) => {
@@ -1428,8 +1435,18 @@ export function PeerProvider({ children }) {
   }, [broadcastSync, dlog]);
 
   useEffect(() => {
-    peers.forEach((remoteId) => scheduleConnect(remoteId));
-  }, [peers, scheduleConnect]);
+    // Only schedule connections for new peers
+    const newPeers = peers.filter(
+      (peerId) => !previousPeersRef.current.has(peerId)
+    );
+    newPeers.forEach((remoteId) => {
+      if (!blockedPeersRef.current.has(remoteId)) {
+        scheduleConnect(remoteId);
+      }
+    });
+    // Update previous peers
+    previousPeersRef.current = new Set(peers);
+  }, [peers, scheduleConnect]); // Include scheduleConnect in dependencies
 
   const sendOrdersToUser = useCallback(
     async (userCode) => {

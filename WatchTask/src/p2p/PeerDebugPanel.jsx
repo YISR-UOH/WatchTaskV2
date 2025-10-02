@@ -15,7 +15,6 @@ export default function PeerDebugPanel() {
     scheduleConnect,
     setDebugLog,
     requestUsersSnapshot,
-    unblockPeer,
     clearBlockedPeers,
   } = usePeer();
 
