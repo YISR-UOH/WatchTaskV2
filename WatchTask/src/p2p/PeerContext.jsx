@@ -675,7 +675,69 @@ export function PeerProvider({ children }) {
               cleanupConnection(remoteId);
               return;
             }
-            // Removed automatic order sending on hello
+
+            // Version sync logic for authenticated peers
+            if (
+              authUserRef.current &&
+              msg?.auth &&
+              isHierarchyAllowed(authUserRef.current, msg.user)
+            ) {
+              // Compare orders versions and sync if needed
+              getOrdersMeta()
+                .then((localOrdersMeta) => {
+                  const localOrdersVersion = localOrdersMeta?.version || 0;
+                  const remoteOrdersVersion = msg.ordersVersion || 0;
+
+                  dlog(
+                    "Versiones órdenes",
+                    remoteId,
+                    "local:",
+                    localOrdersVersion,
+                    "remota:",
+                    remoteOrdersVersion
+                  );
+
+                  if (remoteOrdersVersion > localOrdersVersion) {
+                    // Remote has newer orders, request them
+                    dlog("Solicitando órdenes más recientes de", remoteId);
+                    const speciality =
+                      msg.user?.speciality ??
+                      authUserRef.current.speciality ??
+                      null;
+                    if (speciality != null) {
+                      sendJSON(remoteId, {
+                        type: "requestOrders",
+                        speciality: speciality,
+                      });
+                    }
+                  } else if (localOrdersVersion > remoteOrdersVersion) {
+                    // Local has newer orders, send them
+                    dlog("Enviando órdenes más recientes a", remoteId);
+                    const specialityToSend =
+                      msg.user?.speciality ??
+                      authUserRef.current.speciality ??
+                      null;
+                    if (specialityToSend != null) {
+                      sendOrdersSnapshotToPeer(
+                        remoteId,
+                        specialityToSend
+                      ).catch((err) =>
+                        dlog(
+                          "Error enviando órdenes en sync",
+                          remoteId,
+                          String(err)
+                        )
+                      );
+                    }
+                  } else {
+                    dlog("Versiones de órdenes sincronizadas con", remoteId);
+                  }
+                })
+                .catch((err) =>
+                  dlog("Error obteniendo meta órdenes local", String(err))
+                );
+            }
+
             return;
           }
           if (msg.type === "dataChunk") {
@@ -1339,7 +1401,10 @@ export function PeerProvider({ children }) {
     const handleOrdersChanged = (event) => {
       const reason = event?.detail?.reason;
       if (!authUserRef.current || reason === "snapshot-applied") return;
-      // Removed broadcastSync to avoid automatic sending
+      // Call broadcastSync to send orders to connected peers when local orders change
+      broadcastSync().catch((err) =>
+        dlog("broadcastSync on orders changed error", String(err))
+      );
     };
     window.addEventListener("orders:changed", handleOrdersChanged);
     let bc;
@@ -1360,7 +1425,7 @@ export function PeerProvider({ children }) {
         bc.close();
       }
     };
-  }, []);
+  }, [broadcastSync, dlog]);
 
   useEffect(() => {
     peers.forEach((remoteId) => scheduleConnect(remoteId));
