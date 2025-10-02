@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/Context/AuthContext";
 import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/AdminDashboard";
 import SupervisorDashboard from "@/pages/SupervisorDashboard";
-import MantenedorDashboard from "@/pages/MantenedorDashboard";
+import Mantenedor from "@/pages/Mantenedor";
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -58,7 +58,7 @@ function App() {
                   path="/mantenedor"
                   element={
                     <ProtectedRoute roles={["mantenedor"]}>
-                      <MantenedorDashboard />
+                      <Mantenedor />
                     </ProtectedRoute>
                   }
                 />
