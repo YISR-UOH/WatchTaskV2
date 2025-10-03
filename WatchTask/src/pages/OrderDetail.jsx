@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { unstable_Activity, Activity as ActivityStable } from "react";
 import ViewOrder from "@/components/component_viewOrder";
 import { getOrderByCode } from "@/utils/APIdb";
@@ -9,8 +9,6 @@ let Activity = ActivityStable ?? unstable_Activity;
 export default function OrderDetail() {
   const { code } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
-
   const stateOrder = useMemo(() => location.state?.order ?? null, [location]);
   const [order, setOrder] = useState(stateOrder);
   const [loading, setLoading] = useState(!stateOrder);
@@ -49,16 +47,8 @@ export default function OrderDetail() {
     };
   }, [code, stateOrder]);
 
-  const handleBack = () => navigate(-1);
-
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">Orden #{code}</h1>
-        <button type="button" onClick={handleBack} className="btn">
-          Volver
-        </button>
-      </div>
       <Activity mode={loading ? "visible" : "hidden"}>
         <div className="bg-white border rounded-lg p-6 shadow">
           <p className="text-gray-600">Cargando orden...</p>
@@ -71,7 +61,7 @@ export default function OrderDetail() {
       </Activity>
       <Activity mode={!loading && order && !error ? "visible" : "hidden"}>
         <div className="bg-white border rounded-lg p-6 shadow">
-          <ViewOrder order={order} />
+          <ViewOrder orden={order} onUpdateOrder={setOrder} />
         </div>
       </Activity>
     </div>

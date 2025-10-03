@@ -9,6 +9,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import SupervisorDashboard from "@/pages/SupervisorDashboard";
 import Mantenedor from "@/pages/Mantenedor";
 import OrderDetail from "@/pages/OrderDetail";
+import TaskDetail from "@/pages/TaskDetail";
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -68,6 +69,14 @@ function App() {
                   element={
                     <ProtectedRoute roles={["mantenedor"]}>
                       <OrderDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/mantenedor/orden/:code/tarea/:taskIndex"
+                  element={
+                    <ProtectedRoute roles={["mantenedor"]}>
+                      <TaskDetail />
                     </ProtectedRoute>
                   }
                 />

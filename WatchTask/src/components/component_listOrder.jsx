@@ -39,6 +39,22 @@ export default function ListOrder({ orders }) {
     });
   };
 
+  const getTaskActionLabel = (task) => {
+    const status = Number(task?.status);
+    if (status === 2) return "Ver tarea";
+    if (status === 1) return "Continuar";
+    if (status === 3) return "Anulada";
+    return "Iniciar";
+  };
+
+  const handleTaskAction = (order, task, index) => {
+    if (!order?.code) return;
+    const payload = order.fullOrder ?? order;
+    navigate(`/mantenedor/orden/${order.code}/tarea/${index}`, {
+      state: { order: payload },
+    });
+  };
+
   return (
     <div>
       {orders.map((order) => (
@@ -107,17 +123,12 @@ export default function ListOrder({ orders }) {
                   >
                     <span>{task.Descripcion}</span>
                     <div>
-                      <span className="border-l px-2 font-mono text-sm font-semibold">
-                        {task.status === 0 ? "PENDIENTE" : "COMPLETADA"}
-                      </span>
-                      <button className="border-l px-2 font-mono text-sm font-semibold text-blue-600 hover:text-blue-800 cursor-pointer">
-                        {task.status === 0
-                          ? "INICIAR ->"
-                          : task.status === 1
-                          ? "CONTINUAR ->"
-                          : task.status === 2
-                          ? "COMPLETADA"
-                          : "ANULADA"}
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm min-w-[7rem] justify-center"
+                        onClick={() => handleTaskAction(order, task, index)}
+                      >
+                        {getTaskActionLabel(task)}
                       </button>
                     </div>
                   </li>

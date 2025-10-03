@@ -386,6 +386,58 @@ export async function getOrderByCode(orderCode) {
   return db.orders.get(code);
 }
 
+export async function startOrderTask(orderCode, taskIndex) {
+  await initAPIDB();
+  const code = toInt(orderCode);
+  const idx = Number.parseInt(taskIndex, 10);
+  if (!Number.isFinite(code)) throw new Error("order code must be numeric");
+  if (!Number.isInteger(idx) || idx < 0)
+    throw new Error("task index must be a non-negative integer");
+
+  const order = await db.orders.get(code);
+  if (!order) throw new Error("order not found");
+  const taskList = Array.isArray(order?.tasks?.data) ? order.tasks.data : null;
+  if (!taskList || !taskList[idx]) throw new Error("task not found");
+
+  const prevTask = taskList[idx];
+  const startAt = prevTask?.init_task || new Date().toISOString();
+  const nextTask = {
+    ...prevTask,
+    init_task: startAt,
+    status:
+      typeof prevTask?.status === "number" && prevTask.status > 0
+        ? prevTask.status
+        : 1,
+  };
+
+  const updatedTasks = taskList.map((task, i) =>
+    i === idx ? nextTask : { ...task }
+  );
+
+  const updatedOrder = {
+    ...order,
+    tasks: {
+      ...(order.tasks || {}),
+      data: updatedTasks,
+    },
+  };
+
+  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
+    await db.orders.put(updatedOrder);
+    await bumpOrdersVersion(`start task ${idx + 1} order ${code}`);
+  });
+
+  try {
+    notifyOrdersChanged("task-started");
+  } catch {}
+
+  return {
+    order: updatedOrder,
+    task: nextTask,
+    index: idx,
+  };
+}
+
 // Auth helpers
 export async function verifyRootAdmin(code, password) {
   await initAPIDB();
