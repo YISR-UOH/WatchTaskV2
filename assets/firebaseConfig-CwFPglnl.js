@@ -1,0 +1,1 @@
+import{n as e,t}from"./index-B2d_jvlU.js";export{t as FirebaseAPP,e as db};
