@@ -204,7 +204,9 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
 
   const handleTaskNavigation = async (task, index) => {
     if (!orden?.code && orden?.code !== 0) return;
-    const shouldStart = Number(task?.status) === 0 && !task?.init_task;
+    const hasStarted = Boolean(task?.init_task);
+    const isCompleted = Number(task?.status) === 2;
+    const shouldStart = !hasStarted && !isCompleted;
     try {
       setPendingTaskIndex(index);
       setTaskActionError(null);
@@ -421,11 +423,6 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
                             ? "Abriendo..."
                             : actionLabel}
                         </button>
-                        {task?.init_task && (
-                          <p className="mt-1 text-xs text-slate-500">
-                            Inicio: {new Date(task.init_task).toLocaleString()}
-                          </p>
-                        )}
                       </td>
                     </tr>
                   );

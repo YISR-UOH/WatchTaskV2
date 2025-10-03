@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { unstable_Activity, Activity as ActivityStable } from "react";
+import { startOrderTask } from "@/utils/APIdb";
 let Activity = ActivityStable ?? unstable_Activity;
 export default function ListOrder({ orders }) {
   const navigate = useNavigate();
@@ -8,22 +9,33 @@ export default function ListOrder({ orders }) {
   const [actualOrder, setActualOrder] = useState(null);
   const [hiddenProtocolos, setHiddenProtocolos] = useState(false);
   const [selectedProtocolIndex, setSelectedProtocolIndex] = useState(0);
+  const [taskActionError, setTaskActionError] = useState(null);
+  const [taskPending, setTaskPending] = useState({
+    orderCode: null,
+    index: null,
+  });
   if (!orders || orders == []) return;
   const selectTask = (orderCode) => {
     if (actualOrder == orderCode) {
       setHiddenTasks(!hiddenTasks);
       setHiddenProtocolos(false);
+      setTaskActionError(null);
+      setTaskPending({ orderCode: null, index: null });
       return;
     }
     setActualOrder(orderCode);
     setHiddenTasks(true);
     setHiddenProtocolos(false);
+    setTaskActionError(null);
+    setTaskPending({ orderCode: null, index: null });
   };
   const selectProtocol = (orderCode) => {
     setSelectedProtocolIndex(0);
     if (actualOrder == orderCode) {
       setHiddenProtocolos(!hiddenProtocolos);
       setHiddenTasks(false);
+      setTaskActionError(null);
+      setTaskPending({ orderCode: null, index: null });
       return;
     }
     setActualOrder(orderCode);
@@ -47,12 +59,48 @@ export default function ListOrder({ orders }) {
     return "Iniciar";
   };
 
-  const handleTaskAction = (order, task, index) => {
+  const handleTaskAction = async (order, task, index) => {
     if (!order?.code) return;
-    const payload = order.fullOrder ?? order;
-    navigate(`/mantenedor/orden/${order.code}/tarea/${index}`, {
-      state: { order: payload },
-    });
+    if (Number(task?.status) === 3) return;
+
+    const hasStarted = Boolean(task?.init_task);
+    const isCompleted = Number(task?.status) === 2;
+
+    try {
+      setTaskActionError(null);
+      setTaskPending({ orderCode: order.code, index });
+      let payload = order.fullOrder ?? order;
+
+      if (!hasStarted && !isCompleted) {
+        const { order: updatedOrder } = await startOrderTask(order.code, index);
+        payload = updatedOrder;
+
+        if (order.fullOrder) {
+          order.fullOrder = updatedOrder;
+        }
+
+        if (updatedOrder?.tasks) {
+          order.tasks = updatedOrder.tasks;
+        }
+
+        if (updatedOrder?.info) {
+          order.info = updatedOrder.info;
+        }
+
+        if (Array.isArray(updatedOrder?.protocolos)) {
+          order.protocolos = updatedOrder.protocolos;
+        }
+      }
+
+      navigate(`/mantenedor/orden/${order.code}/tarea/${index}`, {
+        state: { order: payload, taskIndex: index },
+      });
+    } catch (error) {
+      console.error("Failed to start task", error);
+      setTaskActionError("No se pudo iniciar la tarea. Inténtalo nuevamente.");
+    } finally {
+      setTaskPending({ orderCode: null, index: null });
+    }
   };
 
   return (
@@ -115,6 +163,11 @@ export default function ListOrder({ orders }) {
             }
           >
             <div>
+              {taskActionError && actualOrder == order.code && hiddenTasks ? (
+                <div className="mb-2 rounded-md border border-red-200 bg-red-50 px-3 py-1 text-sm text-red-700">
+                  {taskActionError}
+                </div>
+              ) : null}
               <ul className="px-2 list-inside">
                 {order.tasks.data.map((task, index) => (
                   <li
@@ -127,6 +180,11 @@ export default function ListOrder({ orders }) {
                         type="button"
                         className="btn btn-primary btn-sm min-w-[7rem] justify-center"
                         onClick={() => handleTaskAction(order, task, index)}
+                        disabled={
+                          (taskPending.orderCode === order.code &&
+                            taskPending.index === index) ||
+                          Number(task?.status) === 3
+                        }
                       >
                         {getTaskActionLabel(task)}
                       </button>

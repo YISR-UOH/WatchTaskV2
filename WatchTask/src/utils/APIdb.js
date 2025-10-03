@@ -113,6 +113,17 @@ function canonicalizeUsersForSignature(users) {
   return JSON.stringify(sanitized);
 }
 
+const calculateOrderStatus = (tasks) => {
+  if (!Array.isArray(tasks)) return 0;
+  const allCompleted = tasks.every((t) => Number(t.status) === 2);
+  if (allCompleted) return 2;
+  const hasInProgress = tasks.some(
+    (t) => Number(t.status) === 1 || Number(t.status) === 2
+  );
+  if (hasInProgress) return 1;
+  return 0;
+};
+
 /**
  * Initialize DB and ensure PublicDBMeta exists at least with version 1.
  */
@@ -339,7 +350,16 @@ export async function bulkUpsertOrders(orders) {
       ];
       for (const v of vals) {
         const n = Number.parseInt?.(String(v || "").trim(), 10);
-        if (Number.isFinite(n)) return { ...o, code: n };
+        if (Number.isFinite(n)) {
+          const normalized = { ...o, code: n };
+          if (normalized.tasks?.data) {
+            normalized.info = {
+              ...(normalized.info || {}),
+              status: calculateOrderStatus(normalized.tasks.data),
+            };
+          }
+          return normalized;
+        }
       }
       return null;
     })
@@ -422,6 +442,11 @@ export async function startOrderTask(orderCode, taskIndex) {
     },
   };
 
+  updatedOrder.info = {
+    ...(updatedOrder.info || {}),
+    status: calculateOrderStatus(updatedTasks),
+  };
+
   await db.transaction("rw", db.orders, db.ordersMeta, async () => {
     await db.orders.put(updatedOrder);
     await bumpOrdersVersion(`start task ${idx + 1} order ${code}`);
@@ -436,6 +461,113 @@ export async function startOrderTask(orderCode, taskIndex) {
     task: nextTask,
     index: idx,
   };
+}
+
+export async function completeOrderTask(orderCode, taskIndex, updates = {}) {
+  await initAPIDB();
+  const code = toInt(orderCode);
+  const idx = Number.parseInt(taskIndex, 10);
+  if (!Number.isFinite(code)) throw new Error("order code must be numeric");
+  if (!Number.isInteger(idx) || idx < 0)
+    throw new Error("task index must be a non-negative integer");
+
+  const order = await db.orders.get(code);
+  if (!order) throw new Error("order not found");
+  const taskList = Array.isArray(order?.tasks?.data) ? order.tasks.data : null;
+  if (!taskList || !taskList[idx]) throw new Error("task not found");
+
+  const prevTask = taskList[idx];
+  const timestamp = new Date().toISOString();
+
+  const nextTask = {
+    ...prevTask,
+    status: 2,
+    completed_at: prevTask?.completed_at ?? timestamp,
+    accepted_protocol: updates.accepted ?? true,
+    accepted_at: prevTask?.accepted_at ?? timestamp,
+  };
+
+  if (typeof updates.obs === "string") {
+    nextTask.obs_assigned_to = updates.obs;
+  }
+
+  if (typeof updates.medicion !== "undefined") {
+    nextTask.medicion_result = updates.medicion;
+  }
+
+  if (typeof updates.rangoDesde !== "undefined") {
+    nextTask.medicion_range_from = updates.rangoDesde;
+  }
+
+  if (typeof updates.rangoHasta !== "undefined") {
+    nextTask.medicion_range_to = updates.rangoHasta;
+  }
+
+  if (!nextTask.init_task) {
+    nextTask.init_task = timestamp;
+  }
+
+  const updatedTasks = taskList.map((task, i) =>
+    i === idx ? nextTask : { ...task }
+  );
+
+  const updatedOrder = {
+    ...order,
+    tasks: {
+      ...(order.tasks || {}),
+      data: updatedTasks,
+    },
+  };
+
+  updatedOrder.info = {
+    ...(updatedOrder.info || {}),
+    status: calculateOrderStatus(updatedTasks),
+  };
+
+  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
+    await db.orders.put(updatedOrder);
+    await bumpOrdersVersion(`complete task ${idx + 1} order ${code}`);
+  });
+
+  try {
+    notifyOrdersChanged("task-completed");
+  } catch {}
+
+  return {
+    order: updatedOrder,
+    task: nextTask,
+    index: idx,
+  };
+}
+
+export async function saveOrderChecklist(orderCode, checklistData) {
+  await initAPIDB();
+  const code = toInt(orderCode);
+  if (!Number.isFinite(code)) throw new Error("order code must be numeric");
+
+  const order = await db.orders.get(code);
+  if (!order) throw new Error("order not found");
+
+  const nextInfo = {
+    ...(order.info || {}),
+    checkListDict: checklistData,
+  };
+
+  const updatedOrder = {
+    ...order,
+    info: nextInfo,
+  };
+
+  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
+    await db.orders.put(updatedOrder);
+    await bumpOrdersVersion(`save checklist order ${code}`);
+  });
+
+  try {
+    notifyOrdersChanged("order-checklist-updated");
+  } catch {}
+
+  return updatedOrder;
 }
 
 // Auth helpers
