@@ -1,1 +1,0 @@
-import{n as e,t}from"./index-BnrkBPdp.js";export{t as FirebaseAPP,e as db};
