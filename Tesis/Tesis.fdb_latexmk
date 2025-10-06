@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex Tesis"] 1758734860.91163 "Tesis.aux" "Tesis.bbl" "Tesis" 1758734861.89856 0
+["bibtex Tesis"] 1758734860.91163 "Tesis.aux" "Tesis.bbl" "Tesis" 1759758029.33227 0
   "./Bibliografia.bib" 1758734861.89438 1005 f383f442bb7b3fe3292f0bc28e3385da ""
   "/usr/local/texlive/2025/texmf-dist/bibtex/bst/base/apalike.bst" 1292289607 24635 604dafcc79f521a11ea73e506e1fbd98 ""
-  "Tesis.aux" 1758734861.62623 1469 37910d0569d1bd64e24e110f36684ecf "pdflatex"
+  "Tesis.aux" 1759758029.0781 1469 37910d0569d1bd64e24e110f36684ecf "pdflatex"
   (generated)
   "Tesis.bbl"
   "Tesis.blg"
   (rewritten before read)
-["pdflatex"] 1758734861.02232 "/Users/yisr/Desktop/WatchTaskV2/Tesis/Tesis.tex" "Tesis.pdf" "Tesis" 1758734861.89875 0
-  "/Users/yisr/Desktop/WatchTaskV2/Tesis/Tesis.tex" 1758733750.46409 8868 55117d69e78609e520ee8dfc6fa42db2 ""
+["pdflatex"] 1759758028.42015 "/Users/yisr/Desktop/WatchTaskV2/Tesis/Tesis.tex" "Tesis.pdf" "Tesis" 1759758029.33247 0
+  "/Users/yisr/Desktop/WatchTaskV2/Tesis/Tesis.tex" 1759758027.18968 8870 c123b6985ae49e013b15bc0dffec2db4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -92,16 +92,16 @@
   "/usr/local/texlive/2025/texmf-dist/tex/latex/url/url.sty" 1388531844 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "/usr/local/texlive/2025/texmf-dist/tex/latex/xcolor/xcolor.sty" 1727642399 55384 b454dec21c2d9f45ec0b793f0995b992 ""
   "/usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf" 1749313668 42213 4e2ca030e8e2640502016e9e45868dcb ""
-  "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1758732148 5528139 daf1353d2d3d7fed9df2ebbf1b26218e ""
-  "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1758732305 3621559 0d15552d012e8f765b7c207c669af965 ""
+  "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1758735159 5528139 daf1353d2d3d7fed9df2ebbf1b26218e ""
+  "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1758735414 3621560 25f1bccb8d244b96a9cd03e8c0adaa99 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "Tesis.aux" 1758734861.62623 1469 37910d0569d1bd64e24e110f36684ecf "pdflatex"
+  "Tesis.aux" 1759758029.0781 1469 37910d0569d1bd64e24e110f36684ecf "pdflatex"
   "Tesis.bbl" 1758734861.01988 269 643d5ef2e4f238801447e96b6b6eaa31 "bibtex Tesis"
-  "Tesis.lof" 1758734861.62774 30 1bb04962d39b6bda471ac6c46ce13f85 "pdflatex"
-  "Tesis.lot" 1758734861.62776 30 1bb04962d39b6bda471ac6c46ce13f85 "pdflatex"
-  "Tesis.out" 1758734861.62745 1094 be1f013b487cbae71a68564caf9e5450 "pdflatex"
-  "Tesis.tex" 1758733750.46409 8868 55117d69e78609e520ee8dfc6fa42db2 ""
-  "Tesis.toc" 1758734861.6277 548 bf5c0f62f64c1203b3d81bcc6943b297 "pdflatex"
+  "Tesis.lof" 1759758029.07948 30 1bb04962d39b6bda471ac6c46ce13f85 "pdflatex"
+  "Tesis.lot" 1759758029.0795 30 1bb04962d39b6bda471ac6c46ce13f85 "pdflatex"
+  "Tesis.out" 1759758029.07923 1094 be1f013b487cbae71a68564caf9e5450 "pdflatex"
+  "Tesis.tex" 1759758027.18968 8870 c123b6985ae49e013b15bc0dffec2db4 ""
+  "Tesis.toc" 1759758029.07945 548 bf5c0f62f64c1203b3d81bcc6943b297 "pdflatex"
   "data/logo.png" 1758730870.17722 49846 22f890df4a195d005cb476612fb10b76 ""
   (generated)
   "Tesis.aux"
