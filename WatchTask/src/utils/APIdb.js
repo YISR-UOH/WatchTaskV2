@@ -9,6 +9,103 @@
  */
 import Dexie from "dexie";
 
+let persistentStoragePromise;
+let persistentStorageStatus = {
+  supported: false,
+  persisted: false,
+  reason: "unknown",
+};
+
+export function getPersistentStorageStatus() {
+  return { ...persistentStorageStatus };
+}
+
+export async function ensurePersistentStorage({ force = false } = {}) {
+  if (!force && persistentStorageStatus.persisted) {
+    return { ...persistentStorageStatus };
+  }
+  if (!force && persistentStoragePromise) return persistentStoragePromise;
+
+  const request = (async () => {
+    if (typeof navigator === "undefined") {
+      persistentStorageStatus = {
+        supported: false,
+        persisted: false,
+        reason: "no-navigator",
+      };
+      return persistentStorageStatus;
+    }
+
+    const storage = navigator.storage;
+    const hasPersist = typeof storage?.persist === "function";
+    const hasPersisted = typeof storage?.persisted === "function";
+
+    if (!storage || (!hasPersist && !hasPersisted)) {
+      persistentStorageStatus = {
+        supported: false,
+        persisted: false,
+        reason: "storage-api-missing",
+      };
+      return persistentStorageStatus;
+    }
+
+    try {
+      const alreadyPersisted = hasPersisted ? await storage.persisted() : false;
+      if (alreadyPersisted) {
+        persistentStorageStatus = {
+          supported: true,
+          persisted: true,
+          reason: "already-persisted",
+        };
+        return persistentStorageStatus;
+      }
+
+      if (!hasPersist) {
+        persistentStorageStatus = {
+          supported: true,
+          persisted: false,
+          reason: "persist-unsupported",
+        };
+        return persistentStorageStatus;
+      }
+
+      const granted = await storage.persist();
+      persistentStorageStatus = {
+        supported: true,
+        persisted: granted === true,
+        reason: granted ? "granted" : "denied",
+      };
+      if (!granted) {
+        console.warn(
+          "WatchTask: el navegador denegó la solicitud de almacenamiento persistente."
+        );
+      }
+      return persistentStorageStatus;
+    } catch (error) {
+      console.warn(
+        "WatchTask: no fue posible solicitar almacenamiento persistente.",
+        error
+      );
+      persistentStorageStatus = {
+        supported: hasPersist || hasPersisted,
+        persisted: false,
+        reason: "error",
+        error,
+      };
+      return persistentStorageStatus;
+    }
+  })();
+
+  persistentStoragePromise = request.finally(() => {
+    // allow posteriores reintentos si no se obtuvo persistencia
+    if (!persistentStorageStatus.persisted || force) {
+      persistentStoragePromise = null;
+    }
+  });
+
+  return persistentStoragePromise;
+}
+
 // Singleton Dexie instance
 export const db = new Dexie("WatchTaskDB");
 
@@ -128,6 +225,9 @@ const calculateOrderStatus = (tasks) => {
  * Initialize DB and ensure PublicDBMeta exists at least with version 1.
  */
 export async function initAPIDB() {
+  try {
+    await ensurePersistentStorage();
+  } catch {}
   await db.open();
   if ((await db.usersMeta.count()) === 0) {
     await db.usersMeta.put({
