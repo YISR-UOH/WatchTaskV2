@@ -16,9 +16,35 @@ export default function PeerDebugPanel() {
     setDebugLog,
     requestUsersSnapshot,
     clearBlockedPeers,
+    storagePersistence,
+    refreshStoragePersistence,
   } = usePeer();
 
   if (!debugOpen) return null;
+
+  const storageStatus = storagePersistence ?? {
+    supported: false,
+    persisted: false,
+    reason: "unknown",
+  };
+
+  const storageLabel = storageStatus.persisted
+    ? "Persistente"
+    : storageStatus.supported
+    ? "No persistente"
+    : "Sin soporte";
+
+  const storageBadgeClass = storageStatus.persisted
+    ? "bg-green-100 text-green-700"
+    : storageStatus.supported
+    ? "bg-yellow-100 text-yellow-700"
+    : "bg-gray-200 text-gray-700";
+
+  const storageDetails = storageStatus.persisted
+    ? "IndexedDB está protegido contra purgas automáticas."
+    : storageStatus.supported
+    ? "El navegador podría liberar datos offline si necesita espacio."
+    : "El navegador usa almacenamiento 'best-effort'; no admite persistencia forzada.";
 
   return (
     <aside className="fixed top-12 bottom-0 right-0 w-full md:w-[520px] overflow-auto z-20 bg-white border-l border-gray-200 shadow-lg text-xs">
@@ -46,6 +72,38 @@ export default function PeerDebugPanel() {
       </div>
 
       <div className="p-3 space-y-3">
+        <section className="card p-2">
+          <div className="flex items-center justify-between mb-1">
+            <div className="heading mb-0 text-sm">Almacenamiento local</div>
+            <span
+              className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium ${storageBadgeClass}`}
+            >
+              {storageLabel}
+            </span>
+          </div>
+          <div className="text-[11px] text-gray-700">
+            {storageDetails}
+            {storageStatus.reason && (
+              <span className="block text-[10px] text-gray-500 mt-1">
+                Motivo: {storageStatus.reason}
+              </span>
+            )}
+            {storageStatus.error && (
+              <span className="block text-[10px] text-red-600 mt-1">
+                Error: {String(storageStatus.error)}
+              </span>
+            )}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <button
+              className="btn btn-outline px-2 py-1 text-[11px]"
+              onClick={() => refreshStoragePersistence({ force: true })}
+            >
+              Reintentar persistencia
+            </button>
+          </div>
+        </section>
+
         <section>
           <div className="mb-1 text-[12px] font-medium">Conectados</div>
           {connectedPeerIds.length === 0 ? (

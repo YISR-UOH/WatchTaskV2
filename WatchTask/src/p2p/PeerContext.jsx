@@ -27,6 +27,8 @@ import {
   getUsersMeta,
   getOrdersMeta,
   getOrdersSnapshotForUser,
+  ensurePersistentStorage,
+  getPersistentStorageStatus,
 } from "@/utils/APIdb";
 import pako from "pako"; // For compression/decompression
 
@@ -119,6 +121,9 @@ export function PeerProvider({ children }) {
   const [peerRTT, setPeerRTT] = useState({});
   const [debugLog, setDebugLog] = useState([]);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [storagePersistence, setStoragePersistence] = useState(() =>
+    getPersistentStorageStatus()
+  );
 
   const connectionsRef = useRef({});
   const isOnlineRef = useRef(isOnline);
@@ -141,6 +146,7 @@ export function PeerProvider({ children }) {
   const textEncoderRef = useRef(
     typeof TextEncoder !== "undefined" ? new TextEncoder() : null
   );
+  const mountedRef = useRef(true);
 
   const debugLogRef = useRef([]);
   const dlog = useCallback((...args) => {
@@ -1492,6 +1498,40 @@ export function PeerProvider({ children }) {
     return count;
   }, [dlog]);
 
+  const refreshStoragePersistence = useCallback(
+    async ({ force = true } = {}) => {
+      try {
+        const status = await ensurePersistentStorage({ force });
+        if (mountedRef.current) {
+          setStoragePersistence({ ...status });
+        }
+        return status;
+      } catch (error) {
+        const fallback = {
+          supported: false,
+          persisted: false,
+          reason: "error",
+          error,
+        };
+        if (mountedRef.current) {
+          setStoragePersistence(fallback);
+        }
+        return fallback;
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    mountedRef.current = true;
+    refreshStoragePersistence({ force: false }).catch(() => {
+      /* handled in refresh */
+    });
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [refreshStoragePersistence]);
+
   const value = useMemo(
     () => ({
       ICE_SERVERS,
@@ -1519,6 +1559,8 @@ export function PeerProvider({ children }) {
       sendOrdersToUser,
       unblockPeer,
       clearBlockedPeers,
+      storagePersistence,
+      refreshStoragePersistence,
       dlog, // Expose debug logger for manual debugging
     }),
     [
@@ -1543,6 +1585,8 @@ export function PeerProvider({ children }) {
       sendOrdersToUser,
       unblockPeer,
       clearBlockedPeers,
+      storagePersistence,
+      refreshStoragePersistence,
       dlog,
     ]
   );
