@@ -5,6 +5,7 @@
 \contentsline {section}{Objetivos Específico}{3}{section*.7}%
 \contentsline {chapter}{Hipótesis de Trabajo}{4}{chapter*.8}%
 \contentsline {chapter}{Alcance}{5}{chapter*.9}%
-\contentsline {chapter}{Metodología}{7}{chapter*.11}%
-\contentsline {chapter}{Glosario de Términos}{11}{appendix*.15}%
-\contentsline {chapter}{Bibliografia}{12}{appendix*.16}%
+\contentsline {chapter}{Marco Teórico}{6}{chapter*.10}%
+\contentsline {chapter}{Metodología de Investigación y Desarrollo}{12}{chapter*.32}%
+\contentsline {chapter}{Glosario de Términos}{18}{appendix*.45}%
+\contentsline {chapter}{Bibliografia}{19}{appendix*.46}%
