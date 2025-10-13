@@ -106,7 +106,14 @@ export default function ListOrder({ orders }) {
   return (
     <div>
       {orders.map((order) => (
-        <div key={order.code} className="border mb-2 rounded-lg shadow">
+        <div
+          key={order.code}
+          className={`border mb-2 rounded-lg shadow ${
+            order.isNearDue
+              ? "border-red-500 ring-1 ring-red-300"
+              : "border-gray-200"
+          }`}
+        >
           <div className="space-x-reverse flex justify-between items-center top-0">
             <span className="border rounded-tl-md rounded-br-md px-1 py-1 text-sm font-mono font-semibold">
               {order.code}

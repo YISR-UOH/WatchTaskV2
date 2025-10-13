@@ -6,7 +6,7 @@ import PeerDebugPanel from "@/p2p/PeerDebugPanel";
 import { AuthProvider, useAuth } from "@/Context/AuthContext";
 import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/AdminDashboard";
-import SupervisorDashboard from "@/pages/SupervisorDashboard";
+import Supervisor from "@/pages/Supervisor";
 import Mantenedor from "@/pages/Mantenedor";
 import OrderDetail from "@/pages/OrderDetail";
 import TaskDetail from "@/pages/TaskDetail";
@@ -52,7 +52,7 @@ function App() {
                   path="/supervisor"
                   element={
                     <ProtectedRoute roles={["supervisor"]}>
-                      <SupervisorDashboard />
+                      <Supervisor />
                     </ProtectedRoute>
                   }
                 />

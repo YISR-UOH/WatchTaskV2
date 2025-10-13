@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { startOrderTask } from "@/utils/APIdb";
+import { cancelOrder, startOrderTask } from "@/utils/APIdb";
 
 const TASK_STATUS_META = {
   0: {
@@ -62,6 +62,11 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
   const [selectedProtocolIndex, setSelectedProtocolIndex] = useState(0);
   const [taskActionError, setTaskActionError] = useState(null);
   const [pendingTaskIndex, setPendingTaskIndex] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("Falta pieza");
+  const [cancelDetail, setCancelDetail] = useState("");
+  const [cancelError, setCancelError] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -200,7 +205,27 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
   useEffect(() => {
     setTaskActionError(null);
     setPendingTaskIndex(null);
+    setShowCancelModal(false);
+    setCancelReason("Falta pieza");
+    setCancelDetail("");
+    setCancelError(null);
+    setIsCancelling(false);
   }, [orden?.code]);
+
+  const isOrderCancelled = Number(info?.status) === 3;
+
+  const cancellationNotes = useMemo(() => {
+    const raw = info?.obs_anulada;
+    if (Array.isArray(raw)) {
+      return raw.filter((entry) =>
+        typeof entry === "string" ? entry.trim().length > 0 : false
+      );
+    }
+    if (typeof raw === "string" && raw.trim().length > 0) {
+      return [raw.trim()];
+    }
+    return null;
+  }, [info?.obs_anulada]);
 
   const handleTaskNavigation = async (task, index) => {
     if (!orden?.code && orden?.code !== 0) return;
@@ -229,6 +254,35 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
       setTaskActionError("No se pudo iniciar la tarea. Inténtalo nuevamente.");
     } finally {
       setPendingTaskIndex(null);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!orden?.code && orden?.code !== 0) return;
+    const trimmedDetail = cancelDetail.trim();
+    if (!cancelReason) {
+      setCancelError("Selecciona un motivo para anular la orden.");
+      return;
+    }
+    if (trimmedDetail.length === 0) {
+      setCancelError("Describe el motivo con más detalle.");
+      return;
+    }
+    try {
+      setIsCancelling(true);
+      setCancelError(null);
+      const updatedOrder = await cancelOrder(
+        orden.code,
+        cancelReason,
+        trimmedDetail
+      );
+      onUpdateOrder?.(updatedOrder);
+      setShowCancelModal(false);
+    } catch (error) {
+      console.error("Failed to cancel order", error);
+      setCancelError("No se pudo anular la orden. Inténtalo nuevamente.");
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -322,9 +376,29 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
         <p className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-900">
           {observations}
         </p>
+        {isOrderCancelled && cancellationNotes?.length ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <p className="font-semibold uppercase tracking-wide">
+              Orden anulada
+            </p>
+            <ul className="mt-1 list-disc space-y-1 pl-4">
+              {cancellationNotes.map((entry, idx) => (
+                <li key={idx}>{entry}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <button type="button" className="btn btn-danger">
-            Anular Orden
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => {
+              setShowCancelModal(true);
+              setCancelError(null);
+            }}
+            disabled={isOrderCancelled}
+          >
+            {isOrderCancelled ? "Orden anulada" : "Anular Orden"}
           </button>
           <button
             type="button"
@@ -488,6 +562,78 @@ export default function ViewOrder({ orden, onUpdateOrder }) {
                 </pre>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="relative w-full max-w-md rounded-xl bg-white shadow-2xl">
+            <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Anular orden
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Selecciona el motivo y agrega detalles.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+              >
+                Cerrar
+              </button>
+            </header>
+            <div className="flex flex-col gap-4 px-5 py-4">
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                Motivo
+                <select
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  value={cancelReason}
+                  onChange={(event) => setCancelReason(event.target.value)}
+                  disabled={isCancelling}
+                >
+                  <option value="Falta pieza">Falta pieza</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+                Detalle
+                <textarea
+                  className="h-28 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  placeholder="Describe la razón de la anulación"
+                  value={cancelDetail}
+                  onChange={(event) => setCancelDetail(event.target.value)}
+                  disabled={isCancelling}
+                />
+              </label>
+              {cancelError && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {cancelError}
+                </div>
+              )}
+            </div>
+            <footer className="flex items-center justify-end gap-3 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleCancelOrder}
+                disabled={isCancelling}
+              >
+                {isCancelling ? "Anulando..." : "Confirmar anulación"}
+              </button>
+            </footer>
           </div>
         </div>
       )}

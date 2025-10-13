@@ -5,6 +5,16 @@
 \usepackage{graphicx}
 \usepackage{geometry}
 \usepackage{hyperref}
+% Hipervínculos como texto coloreado (sin recuadros) usando el color institucional
+\hypersetup{
+    colorlinks=true,
+    linkcolor=uoh,
+    urlcolor=uoh,
+    citecolor=uoh,
+    filecolor=uoh
+}
+% URLs con el mismo estilo tipográfico que el texto
+\urlstyle{same}
 \usepackage{setspace}
 \usepackage{xcolor}
 \definecolor{uoh}{RGB}{79,131,198}
@@ -18,13 +28,9 @@
 \begin{titlepage}
     \centering
     {\includegraphics[width=0.3\textwidth]{data/logo.png}\par}
-    %color azul para texto en latex 
-    
-
-
-    {\Large\sffamily\textcolor{uoh}{Facultad de Ingeniería Civil en Computación}\par}
+    {\normalsize\sffamily\textcolor{uoh}{Facultad de Ingeniería Civil en Computación}\par}
     \vspace{3cm}
-    {\huge\bfseries Título de la Tesis \par}
+    {\large\bfseries Desarrollo e implementación de una Plataforma Web Progresiva con Sincronización P2P para la Digitalización y Trazabilidad de Órdenes de Mantenimiento Industrial \par}
     \vspace{5cm}
 
     {\normalsize Autor: Yerko Ignacio Sepúlveda Rojas \par}
@@ -93,7 +99,7 @@ El proyecto no incluye la integración directa con sistemas ERP existentes, aunq
 La gestión del mantenimiento se enmarca dentro de la disciplina de la ingeniería de confiabilidad, la cual busca maximizar la disponibilidad de los activos productivos optimizando recursos humanos y materiales. Conceptos como Mantenimiento Centrado en Confiabilidad (RCM), Total Productive Maintenance (TPM) y mantenimiento predictivo orientan la identificación de criticidades, la priorización de intervenciones y la medición de indicadores clave (MTBF, MTTR, OEE). Estos enfoques constituyen la base operativa sobre la que se articula la digitalización propuesta.
 
 \subsection*{Digitalización de procesos de mantenimiento}
-La migración desde flujos manuales hacia sistemas digitales implica modelar procedimientos, trazabilidad documental y gobernanza de datos. Las arquitecturas empresariales contemporáneas incorporan capas de integración con sistemas ERP y plataformas de analítica, donde la interoperabilidad y el cumplimiento normativo (ISO 55000, ISO 14224) resultan determinantes para consolidar repositorios de conocimiento y reducir el riesgo operativo.
+La migración desde flujos manuales hacia sistemas digitales implica modelar procedimientos, trazabilidad documental y gobernanza de datos. Las arquitecturas empresariales contemporáneas incorporan capas de integración con sistemas ERP y plataformas de analítica, donde la interoperabilidad y el cumplimiento normativo (ISO 55000, ISO 14224)\cite{iso55000:2014,iso14224:2016} resultan determinantes para consolidar repositorios de conocimiento y reducir el riesgo operativo.
 
 \section*{Transformación digital e Industria 4.0}
 El paradigma de Industria 4.0 habilita fábricas conectadas capaces de intercambiar información en tiempo real. Tecnologías como Internet of Things (IoT), ciberfísicos y analítica avanzada permiten visualizar estados operacionales y anticipar fallas. La propuesta se alinea con estos principios al introducir una plataforma colaborativa, resiliente y móvil que soporta sincronización distribuida y operación offline para entornos con conectividad intermitente.
@@ -150,14 +156,15 @@ El diseño centrado en el usuario (UCD) y la ingeniería de usabilidad aseguran 
 La integración de analítica descriptiva, diagnóstica y predictiva sobre los datos de mantenimiento habilita tableros de control, proyecciones de costo y evaluación de desempeño. Tecnologías de Business Intelligence y aprendizaje automático aportan modelos de pronóstico, detección de anomalías y recomendación de acciones correctivas, todo ello sustentado en la calidad y disponibilidad de la información capturada por la plataforma.
 
 \section*{Regulaciones y estándares aplicables}
-Los desarrollos tecnológicos en plantas industriales deben alinearse con marcos regulatorios de seguridad laboral, gestión de activos y protección de datos personales. Normativas como ISO 45001, ISO\/IEC 27001 y legislaciones de privacidad (por ejemplo, Ley 19.628 en Chile) condicionan el diseño de controles técnicos y organizacionales, asegurando cumplimiento y confianza de las partes interesadas.
+Los desarrollos tecnológicos en plantas industriales deben alinearse con marcos regulatorios de seguridad laboral, gestión de activos y protección de datos personales. Normativas como ISO 45001, ISO\/IEC 27001 y legislaciones de privacidad (por ejemplo, Ley 19.628 en Chile)\cite{iso45001:2018,iso27001:2022,ley19628} condicionan el diseño de controles técnicos y organizacionales, asegurando cumplimiento y confianza de las partes interesadas.
 
 
 \chapter*{Metodología de Investigación y Desarrollo}
 \addcontentsline{toc}{chapter}{Metodología de Investigación y Desarrollo}
 \section*{Tipo y enfoque de la investigación} La investigación es de tipo aplicada y adopta un enfoque mixto: cualitativo en el levantamiento y análisis de procesos de mantenimiento existentes, y cuantitativo en la evaluación de métricas de desempeño (latencia de sincronización, disponibilidad offline, tiempo medio de registro de tareas y resolución de conflictos de datos).
 
-\section*{Metodología general: Design Science Research} Se sigue el paradigma Design Science Research (DSR), abordando seis pasos: (1) identificación del problema, (2) definición de objetivos de solución, (3) diseño del artefacto, (4) construcción, (5) evaluación iterativa y (6) comunicación de resultados. El artefacto central es una plataforma PWA con sincronización P2P que digitaliza y traza órdenes de mantenimiento.
+\section*{Metodología general: Design Science Research} 
+Se sigue el paradigma Design Science Research (DSR) \cite{hevner2004,peffers2007}, abordando seis pasos: (1) identificación del problema, (2) definición de objetivos de solución, (3) diseño del artefacto, (4) construcción, (5) evaluación iterativa y (6) comunicación de resultados. El artefacto central es una plataforma PWA con sincronización P2P que digitaliza y traza órdenes de mantenimiento.
 
 \section*{Estrategia de desarrollo iterativo–incremental} El desarrollo se organiza en iteraciones cortas (2–3 semanas) aplicando principios ágiles: backlog evolutivo, priorización por valor de riesgo, prototipado temprano y refactorización continua. No se adopta un framework formal completo (Scrum) dado el carácter monousuario del equipo de desarrollo.
 
@@ -186,7 +193,7 @@ Pruebas de caja negra y escenarios offline.
 Mediciones de tiempo (latencia P2P, tiempo de carga inicial, tiempo de parse de PDF).
 Registro de conflictos y resolución (log de versiones y reconciliaciones).
 
-\section*{Criterios de evaluación} Se adoptan atributos de calidad inspirados en ISO/IEC 25010: funcionalidad, fiabilidad (consistencia eventual y manejo de desconexiones), eficiencia de desempeño (tiempo de sincronización), usabilidad (flujo de tareas), mantenibilidad (modularidad) y seguridad (aislamiento de roles, cifrado en tránsito).
+\section*{Criterios de evaluación} Se adoptan atributos de calidad inspirados en ISO/IEC 25010\cite{iso25010:2011}: funcionalidad, fiabilidad (consistencia eventual y manejo de desconexiones), eficiencia de desempeño (tiempo de sincronización), usabilidad (flujo de tareas), mantenibilidad (modularidad) y seguridad (aislamiento de roles, cifrado en tránsito).
 
 \section*{Métricas clave} \begin{itemize} \item Latencia media de propagación de cambios P2P (ms). \item Tasa de éxito de operaciones offline (\% operaciones almacenadas y sincronizadas sin pérdida). \item Tasa de conflictos por 100 sincronizaciones. \item Tiempo medio de parse de una pauta PDF (s). \item Peso de assets iniciales (KB) y tiempo de carga en primer y segundo arranque (frío / caliente). \end{itemize}
 
@@ -202,6 +209,46 @@ Registro de conflictos y resolución (log de versiones y reconciliaciones).
 
 \appendix
 \chapter*{Apéndice}
+\addcontentsline{toc}{chapter}{Apéndice}
+\section*{Implementación de Plataforma}
+\subsection*{Mantenedor}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{data/Mantenedor_HOME_task.png}
+    \caption[\,Mantenedor: Vista inicial (tareas)]{Interfaz de usuario con perfil Mantenedor, Vista Inicial, segmento de tareas expandido.}
+    \label{fig:[Mantenedor_HOME_task]}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{data/Mantenedor_HOME_anexo.png}
+    \caption[\,Mantenedor: Vista inicial (anexos)]{Interfaz de usuario con perfil Mantenedor, Vista Inicial, segmento de anexos expandido.}
+    \label{fig:[Mantenedor_HOME_anexo]}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{data/Mantenedor_Orden.png}
+    \caption[\,Mantenedor: Vista de Orden]{Interfaz de usuario con perfil Mantenedor, Vista de Orden de Mantenimiento.}
+    \label{fig:[Mantenedor_Orden]}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{data/Mantenedor_Task.png}
+    \caption[\,Mantenedor: Vista de Tarea]{Interfaz de usuario con perfil Mantenedor, Vista de Tarea especifica de una orden.}
+    \label{fig:[Mantenedor_Task]}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{data/Mantenedor_Checklist.png}
+    \caption[\,Mantenedor: Checklist de término]{Interfaz de usuario con perfil Mantenedor, Vista de CheckList de termino de orden de mantenimiento.}
+    \label{fig:[Mantenedor_ChechList]}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{data/Debug_Panel.png}
+    \caption[\,Panel de depuración P2P]{Panel para revisar estado de conexiones entre peers, latencia, estado de red y persistencia de datos.}
+    \label{fig:[Debug_Panel]}
+\end{figure}
+
 
 
 \chapter*{Glosario de Términos}
@@ -213,6 +260,6 @@ Registro de conflictos y resolución (log de versiones y reconciliaciones).
 
 
 \bibliographystyle{apalike}
-\bibliography{Bibliografia}
+\bibliography{bibliografia}
 \addcontentsline{toc}{chapter}{Bibliografia}
 \end{document}

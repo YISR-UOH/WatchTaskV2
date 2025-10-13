@@ -2,47 +2,57 @@ This is BibTeX, Version 0.99d (TeX Live 2025)
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: Tesis.aux
 The style file: apalike.bst
-I found no \citation commands---while reading file Tesis.aux
-Database file #1: Bibliografia.bib
-You've used 0 entries,
+Database file #1: bibliografia.bib
+Warning--to sort, need author or key in iso55000:2014
+Warning--to sort, need author or key in iso14224:2016
+Warning--to sort, need author or key in iso45001:2018
+Warning--to sort, need author or key in iso27001:2022
+Warning--to sort, need author or key in ley19628
+Warning--to sort, need author or key in iso25010:2011
+Warning--empty author in iso25010:2011
+Warning--empty author in iso55000:2014
+Warning--empty author in iso14224:2016
+Warning--empty author in iso45001:2018
+Warning--empty author in iso27001:2022
+You've used 8 entries,
             1935 wiz_defined-function locations,
-            471 strings with 3674 characters,
-and the built_in function-call counts, 17 in all, are:
-= -- 0
-> -- 0
+            507 strings with 5112 characters,
+and the built_in function-call counts, 2210 in all, are:
+= -- 217
+> -- 46
 < -- 0
-+ -- 0
-- -- 0
-* -- 0
-:= -- 7
-add.period$ -- 0
-call.type$ -- 0
-change.case$ -- 0
-chr.to.int$ -- 0
-cite$ -- 0
-duplicate$ -- 0
-empty$ -- 1
-format.name$ -- 0
-if$ -- 1
++ -- 18
+- -- 16
+* -- 191
+:= -- 376
+add.period$ -- 25
+call.type$ -- 8
+change.case$ -- 53
+chr.to.int$ -- 8
+cite$ -- 25
+duplicate$ -- 97
+empty$ -- 182
+format.name$ -- 18
+if$ -- 425
 int.to.chr$ -- 1
 int.to.str$ -- 0
-missing$ -- 0
-newline$ -- 3
-num.names$ -- 0
-pop$ -- 0
+missing$ -- 2
+newline$ -- 44
+num.names$ -- 6
+pop$ -- 44
 preamble$ -- 1
-purify$ -- 0
+purify$ -- 48
 quote$ -- 0
-skip$ -- 1
+skip$ -- 61
 stack$ -- 0
-substring$ -- 0
-swap$ -- 0
+substring$ -- 126
+swap$ -- 2
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 0
-warning$ -- 0
-while$ -- 0
+type$ -- 48
+warning$ -- 11
+while$ -- 6
 width$ -- 0
-write$ -- 2
-(There was 1 error message)
+write$ -- 105
+(There were 11 warnings)

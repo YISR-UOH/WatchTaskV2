@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.9.24)  9 OCT 2025 11:21
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.9.24)  10 OCT 2025 13:27
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -266,7 +266,9 @@ Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
 Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 284.
 )
 \Hy@SectionHShift=\skip54
-) (/usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
+)
+Package hyperref Info: Option `colorlinks' set `true' on input line 15.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
 Package: setspace 2022/12/04 v6.7b set line spacing
 ) (/usr/local/texlive/2025/texmf-dist/tex/latex/xcolor/xcolor.sty
 Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
@@ -295,26 +297,26 @@ Package babel Info: 'spanish' activates 'spanish' shorthands.
 )
 \openout1 = `Tesis.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 16.
-LaTeX Font Info:    ... okay on input line 16.
-LaTeX Info: Redefining \. on input line 16.
-LaTeX Info: Redefining \% on input line 16.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 26.
+LaTeX Font Info:    ... okay on input line 26.
+LaTeX Info: Redefining \. on input line 26.
+LaTeX Info: Redefining \% on input line 26.
  (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count315
@@ -368,15 +370,15 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-Package hyperref Info: Link coloring OFF on input line 16.
+Package hyperref Info: Link coloring ON on input line 26.
 (./Tesis.out) (./Tesis.out)
 \@outlinefile=\write3
 \openout3 = `Tesis.out'.
 
-<data/logo.png, id=44, 241.90375pt x 225.84375pt>
+<data/logo.png, id=48, 241.90375pt x 225.84375pt>
 File: data/logo.png Graphic file (type png)
 <use data/logo.png>
-Package pdftex.def Info: data/logo.png  used on input line 20.
+Package pdftex.def Info: data/logo.png  used on input line 30.
 (pdftex.def)             Requested size: 132.30666pt x 123.52866pt.
 
 
@@ -428,7 +430,7 @@ LaTeX Info: Redefining \% on input line 1.
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.56 \chapter
+l.62 \chapter
              *{Objetivos} [1
 
 
@@ -461,11 +463,16 @@ l.56 \chapter
 [10]
 
 [11]
+Overfull \hbox (55.82307pt too wide) in paragraph at lines 167--168
+[]\OT1/cmr/m/n/12 Se si-gue el pa-ra-dig-ma De-sign Scien-ce Re-search (DSR) [[], []],
+ []
+
+
 
 [12
 
 ]
-Overfull \hbox (14.40504pt too wide) in paragraph at lines 170--171
+Overfull \hbox (14.40504pt too wide) in paragraph at lines 177--178
 []\OT1/cmr/m/n/12 Dise~no ar-qui-tect^^Soni-co: se-lec-ci^^Son tec-nol^^Sogi-ca (React, In-de-xedDB via De-xie, WebRTC,
  []
 
@@ -482,22 +489,77 @@ Overfull \hbox (14.40504pt too wide) in paragraph at lines 170--171
 [16
 
 ]
+<data/Mantenedor_HOME_task.png, id=229, 2274.4975pt x 1493.58pt>
+File: data/Mantenedor_HOME_task.png Graphic file (type png)
+<use data/Mantenedor_HOME_task.png>
+Package pdftex.def Info: data/Mantenedor_HOME_task.png  used on input line 217.
+(pdftex.def)             Requested size: 441.01773pt x 289.59464pt.
+<data/Mantenedor_HOME_anexo.png, id=230, 2274.4975pt x 1493.58pt>
+File: data/Mantenedor_HOME_anexo.png Graphic file (type png)
+<use data/Mantenedor_HOME_anexo.png>
+Package pdftex.def Info: data/Mantenedor_HOME_anexo.png  used on input line 223.
+(pdftex.def)             Requested size: 441.01773pt x 289.59464pt.
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<data/Mantenedor_Orden.png, id=231, 1254.6875pt x 1493.58pt>
+File: data/Mantenedor_Orden.png Graphic file (type png)
+<use data/Mantenedor_Orden.png>
+Package pdftex.def Info: data/Mantenedor_Orden.png  used on input line 229.
+(pdftex.def)             Requested size: 441.01773pt x 524.99426pt.
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<data/Mantenedor_Task.png, id=232, 1493.58pt x 2274.4975pt>
+File: data/Mantenedor_Task.png Graphic file (type png)
+<use data/Mantenedor_Task.png>
+Package pdftex.def Info: data/Mantenedor_Task.png  used on input line 235.
+(pdftex.def)             Requested size: 441.01773pt x 671.59567pt.
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<data/Mantenedor_Checklist.png, id=233, 1493.58pt x 2274.4975pt>
+File: data/Mantenedor_Checklist.png Graphic file (type png)
+<use data/Mantenedor_Checklist.png>
+Package pdftex.def Info: data/Mantenedor_Checklist.png  used on input line 241.
+(pdftex.def)             Requested size: 441.01773pt x 671.59567pt.
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+<data/Debug_Panel.png, id=234, 1493.58pt x 2274.4975pt>
+File: data/Debug_Panel.png Graphic file (type png)
+<use data/Debug_Panel.png>
+Package pdftex.def Info: data/Debug_Panel.png  used on input line 247.
+(pdftex.def)             Requested size: 441.01773pt x 671.59567pt.
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+
 
 [17
 
-] (./Tesis.bbl
+ <./data/Mantenedor_HOME_task.png>]
 
-[18
+[18 <./data/Mantenedor_HOME_anexo.png>]
+
+[19 <./data/Mantenedor_Orden.png>]
+
+[20 <./data/Mantenedor_Task.png>]
+
+[21 <./data/Mantenedor_Checklist.png>]
+
+[22 <./data/Debug_Panel.png>] (./Tesis.bbl
+
+[23
 
 ]
 
-LaTeX Warning: Empty `thebibliography' environment on input line 3.
+[24
 
-)
+{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}])
 
-[19
-
-] (./Tesis.aux
+[25] (./Tesis.aux
 LaTeX Info: Redefining \. on input line 11.
 LaTeX Info: Redefining \% on input line 11.
 )
@@ -506,21 +568,21 @@ LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-09-02>
  ***********
 Package rerunfilecheck Info: File `Tesis.out' has not changed.
-(rerunfilecheck)             Checksum: 1181C4262B97EA00BD322142B8E44231;1376.
+(rerunfilecheck)             Checksum: 8F6D80D28D8DE3D359501AC6DC5D6177;1466.
  ) 
 Here is how much of TeX's memory you used:
- 12224 strings out of 467797
- 186911 string characters out of 5431803
- 620813 words of memory out of 5000000
- 40638 multiletter control sequences out of 15000+600000
- 634548 words of font info for 68 fonts, out of 8000000 for 9000
+ 12319 strings out of 467797
+ 189107 string characters out of 5431803
+ 621503 words of memory out of 5000000
+ 40709 multiletter control sequences out of 15000+600000
+ 634886 words of font info for 69 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,5n,79p,1393b,555s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmss17.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on Tesis.pdf (23 pages, 149160 bytes).
+ 75i,6n,79p,1393b,575s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmss12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
+Output written on Tesis.pdf (29 pages, 2444321 bytes).
 PDF statistics:
- 261 PDF objects out of 1000 (max. 8388607)
- 217 compressed objects within 3 object streams
- 82 named destinations out of 1000 (max. 500000)
- 86 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 342 PDF objects out of 1000 (max. 8388607)
+ 278 compressed objects within 3 object streams
+ 104 named destinations out of 1000 (max. 500000)
+ 124 words of extra memory for PDF output out of 10000 (max. 10000000)
 

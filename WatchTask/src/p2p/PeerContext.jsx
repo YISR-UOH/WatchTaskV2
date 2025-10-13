@@ -157,7 +157,6 @@ export function PeerProvider({ children }) {
       .join(" ")}`;
     debugLogRef.current = [...debugLogRef.current.slice(-500), line];
     setDebugLog(debugLogRef.current);
-    console.log("[PeerDebug]", ...args);
   }, []);
 
   const flushQueue = useCallback(

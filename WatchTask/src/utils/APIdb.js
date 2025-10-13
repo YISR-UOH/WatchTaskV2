@@ -493,10 +493,104 @@ export async function fetchOrdersByAssignedUser(userCode) {
   const all = await db.orders.toArray();
   const uid = toInt(userCode);
   if (!Number.isFinite(uid)) return [];
-  return all.filter((o) => {
-    const assignedCode = o?.info?.asignado_a_code;
-    return Number.isFinite(assignedCode) && Number(assignedCode) === uid;
+
+  return all
+    .filter((o) => {
+      const assignedCode = o?.info?.asignado_a_code;
+      return Number.isFinite(assignedCode) && Number(assignedCode) === uid;
+    })
+    .filter((o) => {
+      const status = Number(
+        o?.info?.status ?? calculateOrderStatus(o?.tasks?.data)
+      );
+      return status !== 2 && status !== 3 && status !== 4;
+    });
+}
+
+export async function markOrdersExpired(orderCodes) {
+  await initAPIDB();
+  if (!Array.isArray(orderCodes) || orderCodes.length === 0) return 0;
+
+  const uniqueCodes = Array.from(
+    new Set(
+      orderCodes
+        .map((code) => toInt(code))
+        .filter((code) => Number.isFinite(code))
+    )
+  );
+
+  if (uniqueCodes.length === 0) return 0;
+
+  let updatedCount = 0;
+
+  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
+    for (const code of uniqueCodes) {
+      const order = await db.orders.get(code);
+      if (!order) continue;
+
+      const currentStatus = Number(order?.info?.status);
+      if (currentStatus === 4) continue;
+
+      const updatedOrder = {
+        ...order,
+        info: {
+          ...(order.info || {}),
+          status: 4,
+          obs_anulada: "Anulada automaticamente por vencimiento",
+        },
+      };
+
+      await db.orders.put(updatedOrder);
+      updatedCount += 1;
+    }
+
+    if (updatedCount > 0) {
+      await bumpOrdersVersion(`mark expired orders (${updatedCount})`);
+    }
   });
+
+  if (updatedCount > 0) {
+    try {
+      notifyOrdersChanged("orders-expired");
+    } catch {}
+  }
+
+  return updatedCount;
+}
+
+export async function cancelOrder(orderCode, reason, detail) {
+  await initAPIDB();
+  const code = toInt(orderCode);
+  if (!Number.isFinite(code)) throw new Error("order code must be numeric");
+
+  const order = await db.orders.get(code);
+  if (!order) throw new Error("order not found");
+
+  const sanitizedReason = typeof reason === "string" ? reason.trim() : "";
+  const sanitizedDetail = typeof detail === "string" ? detail.trim() : "";
+  if (!sanitizedReason) throw new Error("cancellation reason required");
+  if (!sanitizedDetail) throw new Error("cancellation detail required");
+  const obsAnulada = [sanitizedReason, sanitizedDetail];
+
+  const updatedOrder = {
+    ...order,
+    info: {
+      ...(order.info || {}),
+      status: 3,
+      obs_anulada: obsAnulada,
+    },
+  };
+
+  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
+    await db.orders.put(updatedOrder);
+    await bumpOrdersVersion(`cancel order ${code}`);
+  });
+
+  try {
+    notifyOrdersChanged("order-cancelled");
+  } catch {}
+
+  return updatedOrder;
 }
 
 export async function getOrderByCode(orderCode) {

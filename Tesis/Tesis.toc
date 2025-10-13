@@ -7,5 +7,6 @@
 \contentsline {chapter}{Alcance}{5}{chapter*.9}%
 \contentsline {chapter}{Marco Teórico}{6}{chapter*.10}%
 \contentsline {chapter}{Metodología de Investigación y Desarrollo}{12}{chapter*.32}%
-\contentsline {chapter}{Glosario de Términos}{18}{appendix*.45}%
-\contentsline {chapter}{Bibliografia}{19}{appendix*.46}%
+\contentsline {chapter}{Apéndice}{17}{appendix*.44}%
+\contentsline {chapter}{Glosario de Términos}{23}{appendix*.47}%
+\contentsline {chapter}{Bibliografia}{25}{appendix*.48}%

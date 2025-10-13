@@ -1,3 +1,44 @@
 \begin{thebibliography}{}
 
+\bibitem[ley, 1999]{ley19628}
+ (1999).
+\newblock Ley n° 19.628 sobre protección de la vida privada.
+\newblock Diario Oficial de la República de Chile.
+\newblock Vigente con modificaciones.
+
+\bibitem[iso, 2011]{iso25010:2011}
+ (2011).
+\newblock Iso/iec 25010:2011 systems and software engineering — systems and software quality requirements and evaluation (square) — system and software quality models.
+\newblock Standard, International Organization for Standardization and International Electrotechnical Commission, Geneva, Switzerland.
+
+\bibitem[iso, 2014]{iso55000:2014}
+ (2014).
+\newblock Iso 55000:2014 asset management — overview, principles and terminology.
+\newblock Standard, International Organization for Standardization, Geneva, Switzerland.
+
+\bibitem[iso, 2016]{iso14224:2016}
+ (2016).
+\newblock Iso 14224:2016 petroleum, petrochemical and natural gas industries — collection and exchange of reliability and maintenance data for equipment.
+\newblock Standard, International Organization for Standardization, Geneva, Switzerland.
+
+\bibitem[iso, 2018]{iso45001:2018}
+ (2018).
+\newblock Iso 45001:2018 occupational health and safety management systems — requirements with guidance for use.
+\newblock Standard, International Organization for Standardization, Geneva, Switzerland.
+
+\bibitem[iso, 2022]{iso27001:2022}
+ (2022).
+\newblock Iso/iec 27001:2022 information security, cybersecurity and privacy protection — information security management systems — requirements.
+\newblock Standard, International Organization for Standardization and International Electrotechnical Commission, Geneva, Switzerland.
+
+\bibitem[Hevner et~al., 2004]{hevner2004}
+Hevner, A.~R., March, S.~T., Park, J., and Ram, S. (2004).
+\newblock Design science in information systems research.
+\newblock {\em MIS Quarterly}, 28(1):75--105.
+
+\bibitem[Peffers et~al., 2007]{peffers2007}
+Peffers, K., Tuunanen, T., Rothenberger, M.~A., and Chatterjee, S. (2007).
+\newblock A design science research methodology for information systems research.
+\newblock In {\em Proceedings of the 1st International Conference on Design Science Research in Information Systems and Technology (DESRIST)}.
+
 \end{thebibliography}

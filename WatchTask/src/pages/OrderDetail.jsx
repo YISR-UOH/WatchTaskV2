@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router";
 import { unstable_Activity, Activity as ActivityStable } from "react";
-import ViewOrder from "@/components/component_viewOrder";
+import ViewOrder from "@/components/mantenedor/component_viewOrder";
 import { getOrderByCode } from "@/utils/APIdb";
 
 let Activity = ActivityStable ?? unstable_Activity;
