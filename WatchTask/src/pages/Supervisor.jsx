@@ -6,7 +6,7 @@
 import React, { useMemo, useState } from "react";
 import { useAuth } from "@/Context/AuthContext";
 import AssignOrden from "@/components/supervisor/component_assignOrden";
-
+import ReviewOrder from "@/components/supervisor/component_reviewOrder";
 export default function Supervisor() {
   const { user } = useAuth();
   const tabs = useMemo(
@@ -19,7 +19,7 @@ export default function Supervisor() {
       {
         id: "review",
         label: "Revision de Ordenes",
-        content: <div>En revisión</div>,
+        content: <ReviewOrder />,
       },
       {
         id: "dashboard",
@@ -40,7 +40,7 @@ export default function Supervisor() {
 
   return (
     <div>
-      <div className="flex flex-row gap-4 p-4 align-center justify-center sticky top-0 bg-white shadow">
+      <div className="flex flex-row gap-4 p-2 align-center justify-center sticky top-10 bg-white shadow">
         {tabs.map((tab) => (
           <button
             key={tab.id}

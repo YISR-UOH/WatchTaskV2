@@ -108,9 +108,9 @@ export default function ListOrder({ orders }) {
       {orders.map((order) => (
         <div
           key={order.code}
-          className={`border mb-2 rounded-lg shadow ${
+          className={`border mb-5 rounded-lg shadow ${
             order.isNearDue
-              ? "border-red-500 ring-1 ring-red-300"
+              ? "border-red-500 ring-1 ring-red-300 bg-red-50"
               : "border-gray-200"
           }`}
         >

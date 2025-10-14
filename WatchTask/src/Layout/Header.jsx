@@ -30,9 +30,24 @@ export default function Header() {
           <button
             type="button"
             onClick={handleNavigateHome}
-            className="rounded-md text-left text-lg font-semibold text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 cursor-pointer"
+            className="btn btn-outline flex items-center gap-2 text-lg cursor-pointer"
           >
-            WatchTask
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              className="h-5 w-5 text-blue-600"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 10.5 12 3l9 7.5" />
+              <path d="M5 10v10h14V10" />
+              <path d="M9 20v-6h6v6" />
+            </svg>
+            <span className="leading-none">WatchTask</span>
           </button>
         </h1>
         <div className="flex items-center gap-2">

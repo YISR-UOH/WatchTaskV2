@@ -112,15 +112,48 @@ export default function AssignOrden() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) {
+      setMaintainers([]);
+      setMaintainersError(null);
+      return;
+    }
+
     let cancelled = false;
     listUsers()
       .then((users) => {
         if (cancelled) return;
-        const maint = users.filter(
-          (u) => u.role === "mantenedor" && u.active !== false
-        );
+        const supervisorSpeciality = user.speciality;
+        const hasSupervisorSpeciality =
+          supervisorSpeciality !== undefined &&
+          supervisorSpeciality !== null &&
+          supervisorSpeciality !== "";
+
+        if (!hasSupervisorSpeciality) {
+          setMaintainers([]);
+          setMaintainersError(
+            "Configura la especialidad del supervisor para listar mantenedores."
+          );
+          return;
+        }
+
+        const maint = users.filter((u) => {
+          if (u.role !== "mantenedor" || u.active === false) return false;
+          const maintSpeciality = u.speciality;
+          if (
+            maintSpeciality === undefined ||
+            maintSpeciality === null ||
+            maintSpeciality === ""
+          )
+            return false;
+          return String(maintSpeciality) === String(supervisorSpeciality);
+        });
+
         setMaintainers(maint);
-        setMaintainersError(null);
+        setMaintainersError(
+          maint.length === 0
+            ? "No hay mantenedores activos con tu especialidad."
+            : null
+        );
       })
       .catch((err) => {
         if (cancelled) return;
@@ -131,7 +164,7 @@ export default function AssignOrden() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!selectedMaintainer) return;
@@ -216,10 +249,10 @@ export default function AssignOrden() {
       })
       .filter((o) => {
         if (searchTerm === "") return true;
-        const nUnidad = (o?.info?.["N Unidad"] || "").toLowerCase();
-        const orderId = (o?.id || "").toLowerCase();
-        const orderCode = (o?.code || "").toLowerCase();
-        const descripcion = (o?.info?.Descripcion || "").toLowerCase();
+        const nUnidad = String(o?.info["N Unidad"] ?? "").toLowerCase();
+        const orderId = String(o?.id ?? "").toLowerCase();
+        const orderCode = String(o?.code ?? "").toLowerCase();
+        const descripcion = String(o?.info?.Descripcion ?? "").toLowerCase();
         return (
           nUnidad.includes(searchTerm) ||
           orderId.includes(searchTerm) ||
@@ -381,38 +414,70 @@ export default function AssignOrden() {
   return (
     <div>
       <div>
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Buscar por código o nombre de máquina"
-            className="border p-2 w-full"
-            onChange={handleSearchChange}
-          />
-        </div>
-        <div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <h2 className="text-xl font-bold mb-2">Filtrar por Máquina:</h2>
-            <select value={selectMachine} onChange={handleChangeMachine}>
-              <option value="">-- Todas las Máquinas --</option>
-              {MACHINES &&
-                Object.entries(MACHINES).map(([key, value]) => (
+        <div className="card mb-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[220px]">
+              <label className="sr-only" htmlFor="assign-orders-search">
+                Buscar órdenes
+              </label>
+              <div className="relative">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                  className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+                <input
+                  id="assign-orders-search"
+                  type="text"
+                  placeholder="Buscar por código o unidad"
+                  className="input w-full pl-9"
+                  onChange={handleSearchChange}
+                />
+              </div>
+            </div>
+            <div className="min-w-[200px]">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                Máquina
+              </label>
+              <select
+                className="input w-full"
+                value={selectMachine}
+                onChange={handleChangeMachine}
+              >
+                <option value="">Todas</option>
+                {Object.entries(MACHINES).map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
                   </option>
                 ))}
-            </select>
-          </div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <h2 className="text-xl font-bold mb-2">Filtrar por Servicio:</h2>
-            <select value={selectServices} onChange={handleChangeServices}>
-              <option value="">-- Todos los Servicios --</option>
-              {SERVICES &&
-                Object.entries(SERVICES).map(([key, value]) => (
+              </select>
+            </div>
+            <div className="min-w-[200px]">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                Servicio
+              </label>
+              <select
+                className="input w-full"
+                value={selectServices}
+                onChange={handleChangeServices}
+              >
+                <option value="">Todos</option>
+                {Object.entries(SERVICES).map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
                   </option>
                 ))}
-            </select>
+              </select>
+            </div>
           </div>
         </div>
         <div className="card mb-4 space-y-3">
