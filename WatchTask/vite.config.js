@@ -30,10 +30,10 @@ export default defineConfig({
           "Gestión colaborativa de órdenes de mantenimiento con soporte offline.",
         theme_color: "#0f172a",
         background_color: "#f8fafc",
-        display: "fullscreen",
+        display: "standalone",
         start_url: "/WatchTaskV2/",
         scope: "/WatchTaskV2/",
-        orientation: "landscape-primary",
+        orientation: "natural",
         icons: [
           {
             src: "pwa-64.png",
