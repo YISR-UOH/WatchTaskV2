@@ -1,0 +1,1 @@
+import{n as e,t}from"./index-B4_Ps88u.js";export{t as FirebaseAPP,e as db};
