@@ -338,7 +338,7 @@ export default function ReviewOrder() {
                     type="button"
                     onClick={() => handleSelectOrder(order.code)}
                     className={`flex w-full flex-col gap-2 px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                      isSelected ? "bg-blue-50" : "hover:bg-slate-50"
+                      isSelected ? "bg-blue-50" : "hover:bg-blue-100"
                     }`}
                   >
                     <div className="flex items-center justify-between">

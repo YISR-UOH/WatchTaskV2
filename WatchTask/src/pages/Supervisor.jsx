@@ -7,6 +7,7 @@ import React, { useMemo, useState } from "react";
 import { useAuth } from "@/Context/AuthContext";
 import AssignOrden from "@/components/supervisor/component_assignOrden";
 import ReviewOrder from "@/components/supervisor/component_reviewOrder";
+import ReassignOrder from "@/components/supervisor/component_reassignOrder";
 export default function Supervisor() {
   const { user } = useAuth();
   const tabs = useMemo(
@@ -20,6 +21,11 @@ export default function Supervisor() {
         id: "review",
         label: "Revision de Ordenes",
         content: <ReviewOrder />,
+      },
+      {
+        id: "reassign",
+        label: "Reasignar Ordenes",
+        content: <ReassignOrder />,
       },
       {
         id: "dashboard",
