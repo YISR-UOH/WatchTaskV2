@@ -40,7 +40,7 @@ export default function Supervisor() {
 
   return (
     <div>
-      <div className="flex flex-row gap-4 p-2 align-center justify-center sticky top-10 bg-white shadow">
+      <div className="flex flex-row gap-4 p-2 align-center justify-center sticky top-10 bg-white shadow z-10">
         {tabs.map((tab) => (
           <button
             key={tab.id}

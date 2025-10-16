@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ListOrder from "@/components/mantenedor/component_listOrder";
 import { useAuth } from "@/Context/AuthContext";
-import { fetchOrdersByAssignedUser, markOrdersExpired } from "@/utils/APIdb";
+import {
+  fetchOrdersByAssignedUser,
+  markOrdersExpired,
+  getOrderExpirationDetails,
+} from "@/utils/APIdb";
+import { startOfChileDay } from "@/utils/timezone";
 import { unstable_Activity, Activity as ActivityStable } from "react";
 let Activity = ActivityStable ?? unstable_Activity;
 
@@ -45,7 +50,6 @@ export default function Mantenedor() {
   const [selectMachine, setSelectMachine] = useState("");
   const [selectService, setSelectService] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-
   const onloadOrders = (listOrders) => {
     if (!Array.isArray(listOrders) || listOrders.length === 0) {
       setOrders([]);
@@ -57,46 +61,10 @@ export default function Mantenedor() {
       return Number.isFinite(parsed) ? parsed : Number.POSITIVE_INFINITY;
     };
 
-    const toNumberOrNull = (value) => {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    const parseDate = (value) => {
-      if (!value) return null;
-      const directDate = new Date(value);
-      if (!Number.isNaN(directDate.getTime())) {
-        return directDate;
-      }
-
-      if (typeof value === "string") {
-        const parts = value.split("/");
-        if (parts.length === 3) {
-          let [day, month, year] = parts.map((part) => Number(part));
-          if (
-            Number.isFinite(day) &&
-            Number.isFinite(month) &&
-            Number.isFinite(year)
-          ) {
-            if (year < 100) {
-              const currentCentury = Math.floor(new Date().getFullYear() / 100);
-              year += currentCentury * 100;
-              if (year - new Date().getFullYear() > 50) {
-                year -= 100;
-              }
-            }
-            const isoDate = new Date(year, month - 1, day);
-            if (!Number.isNaN(isoDate.getTime())) {
-              return isoDate;
-            }
-          }
-        }
-      }
-
-      return null;
-    };
-
-    const nowMs = Date.now();
+    const now = new Date();
+    const nowMs = now.getTime();
+    const todayStart = startOfChileDay(now);
+    const todayStartMs = todayStart ? todayStart.getTime() : nowMs;
     const millisecondsPerDay = 1000 * 60 * 60 * 24;
     const expiredOrderCodes = [];
 
@@ -104,7 +72,7 @@ export default function Mantenedor() {
       .filter((order) => {
         if (!order?.code) return false;
         const status = Number(order?.info?.status);
-        return status !== 2 && status !== 3 && status !== 4; // Skip completada, anulada y vencida
+        return status !== 2 && status !== 3;
       })
       .map((order) => {
         const tasks = order?.tasks ?? {};
@@ -123,34 +91,36 @@ export default function Mantenedor() {
           order.info?.["Frec. Dias"] ?? order.info?.FrecDias
         );
 
-        const frequencyValueRaw = toNumberOrNull(
-          order.info?.["Frec. Dias"] ?? order.info?.FrecDias
-        );
-
-        const nextEmissionDate = parseDate(
-          order.info?.["Fecha Prox Emision"] ?? order.info?.FechaProxEmision
-        );
-
-        const nextEmissionDiffDays = nextEmissionDate
-          ? (nextEmissionDate.getTime() - nowMs) / millisecondsPerDay
-          : Number.POSITIVE_INFINITY;
-
-        const nearDueThreshold =
-          frequencyValueRaw !== null ? frequencyValueRaw * 0.3 : null;
-        const isExpired = Boolean(
-          Number.isFinite(nextEmissionDiffDays) && nextEmissionDiffDays < 0
-        );
+        const expirationDetails = getOrderExpirationDetails(order);
+        const isExpired = expirationDetails
+          ? todayStartMs > expirationDetails.expirationDate.getTime()
+          : false;
 
         if (isExpired) {
           expiredOrderCodes.push(order.code);
           return null;
         }
 
+        const frequencyValueRaw = expirationDetails?.frequencyDays ?? null;
+
+        const dueDiffDays = expirationDetails
+          ? (expirationDetails.dueDate.getTime() - todayStartMs) /
+            millisecondsPerDay
+          : Number.POSITIVE_INFINITY;
+
+        const nextEmissionDiffDays = expirationDetails
+          ? (expirationDetails.expirationDate.getTime() - todayStartMs) /
+            millisecondsPerDay
+          : Number.POSITIVE_INFINITY;
+
+        const nearDueThreshold =
+          frequencyValueRaw !== null ? frequencyValueRaw * 0.3 : null;
+
         const isNearDue = Boolean(
           nearDueThreshold !== null &&
-            Number.isFinite(nextEmissionDiffDays) &&
-            nextEmissionDiffDays >= 0 &&
-            nextEmissionDiffDays <= nearDueThreshold
+            Number.isFinite(dueDiffDays) &&
+            dueDiffDays >= 0 &&
+            dueDiffDays <= nearDueThreshold
         );
 
         return {
@@ -193,15 +163,25 @@ export default function Mantenedor() {
     setLoading(true);
 
     try {
-      const assignedOrders = await fetchOrdersByAssignedUser(user.code);
-      const expiredCodes = onloadOrders(assignedOrders);
-      if (Array.isArray(expiredCodes) && expiredCodes.length > 0) {
+      const processLoad = async (shouldMarkExpired) => {
+        const assignedOrders = await fetchOrdersByAssignedUser(user.code);
+        const expiredCodes = onloadOrders(assignedOrders);
+
+        if (!shouldMarkExpired || !Array.isArray(expiredCodes)) {
+          return;
+        }
+
         try {
-          await markOrdersExpired(expiredCodes);
+          const result = await markOrdersExpired(expiredCodes);
+          if (result?.expiredMarked > 0 || result?.restored > 0) {
+            await processLoad(false);
+          }
         } catch (error) {
           console.error("No se pudieron marcar órdenes vencidas", error);
         }
-      }
+      };
+
+      await processLoad(true);
     } finally {
       setLoading(false);
     }

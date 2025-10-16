@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/Context/AuthContext";
+import { formatChileDate, formatChileISODate } from "@/utils/timezone";
 
 const CHECKLIST_ITEMS = [
   {
@@ -54,7 +55,7 @@ const buildInitialChecklist = ({
       "",
     mantenedor_code: user?.code ?? "",
     mantenedor_name: user?.name ?? "",
-    fecha: new Date().toISOString().slice(0, 10),
+    fecha: formatChileISODate(),
   };
 
   const baseAnswers = CHECKLIST_ITEMS.map(({ item }) => ({
@@ -67,8 +68,7 @@ const buildInitialChecklist = ({
 
   const baseSupervisor = {
     nombre: user?.role === "supervisor" ? user.name : "",
-    fecha:
-      user?.role === "supervisor" ? new Date().toISOString().slice(0, 10) : "",
+    fecha: user?.role === "supervisor" ? formatChileISODate() : "",
     firma: user?.role === "supervisor" ? String(user.code) : "",
   };
 
@@ -114,7 +114,7 @@ const buildInitialChecklist = ({
 const serializeChecklist = (checklist) => ({
   meta: {
     ...checklist.meta,
-    fecha: checklist.meta?.fecha || new Date().toISOString().slice(0, 10),
+    fecha: checklist.meta?.fecha || formatChileISODate(),
   },
   answers: checklist.answers.map((answer) => ({
     item: answer.item,
@@ -174,7 +174,7 @@ export default function OrderCompletionChecklist({
           ...prev,
           supervisor: {
             nombre: user.name,
-            fecha: new Date().toISOString().slice(0, 10),
+            fecha: formatChileISODate(),
             firma: String(user.code),
           },
         }));
@@ -300,9 +300,7 @@ export default function OrderCompletionChecklist({
                     Fecha
                   </span>
                   <span className="text-base font-semibold text-slate-900">
-                    {new Date(
-                      checklist.meta.fecha || Date.now()
-                    ).toLocaleDateString("es-ES")}
+                    {formatChileDate(checklist.meta.fecha || Date.now())}
                   </span>
                 </div>
                 <div className="flex flex-col">

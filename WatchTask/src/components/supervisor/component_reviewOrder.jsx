@@ -8,9 +8,19 @@
  * el supervisor revisa la orden y acepta la orden.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useAuth } from "@/Context/AuthContext";
-import { fetchOrdersBySpeciality, saveOrderChecklist } from "@/utils/APIdb";
+import {
+  fetchOrdersBySpeciality,
+  markOrdersExpired,
+  saveOrderChecklist,
+} from "@/utils/APIdb";
 import { usePeer } from "@/p2p/PeerContext";
 import OrderCompletionChecklist from "@/components/OrderCompletionChecklist";
 
@@ -57,17 +67,44 @@ export default function ReviewOrder() {
   const [showChecklist, setShowChecklist] = useState(false);
   const [savingChecklist, setSavingChecklist] = useState(false);
   const [checklistError, setChecklistError] = useState(null);
+  const hasAutoselectedRef = useRef(false);
 
   const loadOrders = useCallback(async () => {
     if (!user) {
       setOrders([]);
       return;
     }
-    try {
-      setLoading(true);
-      setError(null);
+
+    setLoading(true);
+    setError(null);
+
+    const fetchAndMaybeRevalidate = async (shouldRevalidate = true) => {
       const data = await fetchOrdersBySpeciality(user.speciality);
       setOrders(data);
+
+      if (!shouldRevalidate) return;
+
+      const statusFourCodes = data
+        .filter((order) => Number(order?.info?.status) === 4)
+        .map((order) => order.code)
+        .filter((code) => Number.isFinite(Number(code)));
+      if (statusFourCodes.length === 0) return;
+
+      try {
+        const result = await markOrdersExpired(statusFourCodes);
+        if (result?.expiredMarked > 0 || result?.restored > 0) {
+          await fetchAndMaybeRevalidate(false);
+        }
+      } catch (validationError) {
+        console.error(
+          "No se pudo revalidar el estado de las órdenes vencidas",
+          validationError
+        );
+      }
+    };
+
+    try {
+      await fetchAndMaybeRevalidate(true);
     } catch (err) {
       setError(
         err?.message || "No se pudieron obtener las órdenes para revisión."
@@ -122,32 +159,63 @@ export default function ReviewOrder() {
     [supervisorOrders]
   );
 
+  const expiredOrders = useMemo(
+    () => supervisorOrders.filter((order) => Number(order?.info?.status) === 4),
+    [supervisorOrders]
+  );
+
   const selectedOrder = useMemo(() => {
     if (!pendingOrders.length) return null;
-    if (selectedCode === null) return pendingOrders[0];
+    if (selectedCode === null) return null;
     return (
       pendingOrders.find(
         (order) => Number(order.code) === Number(selectedCode)
-      ) ?? pendingOrders[0]
+      ) || null
     );
   }, [pendingOrders, selectedCode]);
 
   useEffect(() => {
     if (!pendingOrders.length) {
       setSelectedCode(null);
+      hasAutoselectedRef.current = false;
       return;
     }
     setSelectedCode((prev) => {
-      if (prev === null) return pendingOrders[0].code;
-      const exists = pendingOrders.some(
-        (order) => Number(order.code) === Number(prev)
-      );
-      return exists ? prev : pendingOrders[0].code;
+      const exists =
+        prev !== null &&
+        pendingOrders.some((order) => Number(order.code) === Number(prev));
+
+      if (exists) return prev;
+
+      if (prev === null) {
+        if (!hasAutoselectedRef.current) {
+          hasAutoselectedRef.current = true;
+          return pendingOrders[0].code;
+        }
+        return null;
+      }
+
+      hasAutoselectedRef.current = true;
+      return pendingOrders[0].code;
     });
   }, [pendingOrders]);
 
+  useEffect(() => {
+    if (!selectedOrder) {
+      setShowChecklist(false);
+      setChecklistError(null);
+    }
+  }, [selectedOrder]);
+
   const handleSelectOrder = (orderCode) => {
-    setSelectedCode(orderCode);
+    setSelectedCode((prev) => {
+      const current = Number(prev);
+      const next = Number(orderCode);
+      if (Number.isFinite(current) && current === next) {
+        return null;
+      }
+      return orderCode;
+    });
   };
 
   const checklistStats = useMemo(() => {
@@ -242,188 +310,182 @@ export default function ReviewOrder() {
         </div>
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-[320px,1fr]">
-        <div className="card p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Pendientes de revisión
-            </h3>
-            <span className="text-sm text-slate-500">
-              {pendingOrders.length}
-            </span>
-          </div>
-          {pendingOrders.length === 0 ? (
-            <p className="text-sm text-slate-600">
-              No hay órdenes listas para revisión.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {pendingOrders.map((order) => {
-                const isSelected =
-                  selectedOrder &&
-                  Number(order.code) === Number(selectedOrder.code);
-                return (
-                  <li key={order.code}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelectOrder(order.code)}
-                      className={`w-full rounded-lg border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-200 ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-slate-200 hover:border-blue-300"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-900">
-                          Orden #{order.code}
-                        </span>
-                        <span className="text-xs font-medium uppercase tracking-wide text-emerald-700">
-                          Lista para revisión
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-slate-600 line-clamp-2">
-                        {order?.info?.Descripcion || "Sin descripción"}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span>
-                          Unidad: {order?.info?.["N Unidad"] || "N/A"}
-                        </span>
-                        <span>
-                          Mantenedor: {order?.info?.asignado_a_name || "N/A"}
-                        </span>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+      <section className="card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900">
+            Pendientes de revisión
+          </h3>
+          <span className="text-sm text-slate-500">{pendingOrders.length}</span>
         </div>
-
-        <div className="card p-6">
-          {selectedOrder ? (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-900">
-                    Orden #{selectedOrder.code}
-                  </h3>
-                  <p className="text-sm text-slate-600">
-                    {selectedOrder?.info?.Descripcion || "Sin descripción"}
-                  </p>
-                </div>
-                <div className="flex flex-col items-start gap-1 text-xs text-slate-500 md:items-end">
-                  <span>
-                    Unidad: {selectedOrder?.info?.["N Unidad"] || "N/A"}
-                  </span>
-                  <span>
-                    Mantenedor asignado:{" "}
-                    {selectedOrder?.info?.asignado_a_name || "N/A"}
-                  </span>
-                  <span>
-                    Checklist:{" "}
-                    {hasSupervisorSignature(selectedOrder?.info?.checkListDict)
-                      ? "Firmado"
-                      : "Sin firma"}
-                  </span>
-                </div>
-              </div>
-
-              {checklistStats ? (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  <span className="font-semibold text-blue-900">
-                    Resumen del checklist:
-                  </span>
-                  <span className="ml-2">Sí: {checklistStats.si}</span>
-                  <span className="ml-2">No: {checklistStats.no}</span>
-                  <span className="ml-2">N/A: {checklistStats.na}</span>
-                </div>
-              ) : null}
-
-              <section className="space-y-2">
-                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Detalles de tareas
-                </h4>
-                <div className="space-y-2">
-                  {Array.isArray(selectedOrder?.tasks?.data) ? (
-                    selectedOrder.tasks.data.map((task, index) => {
-                      const taller = task?.Taller || "Sin taller";
-                      const maintObs = task?.obs_assigned_to?.trim();
-                      return (
-                        <div
-                          key={`${selectedOrder.code}-task-${index}`}
-                          className="rounded-lg border border-slate-200 bg-white px-3 py-2"
-                        >
-                          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-slate-900">
-                                Tarea {index + 1}:{" "}
-                                {task?.Descripcion || "Sin descripción"}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                Taller: {taller}
-                              </p>
-                            </div>
-                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                              {getTaskStatusLabel(task?.status)}
-                            </span>
-                          </div>
-                          {maintObs ? (
-                            <p className="mt-2 rounded-md border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600">
-                              Observación del mantenedor: {maintObs}
-                            </p>
-                          ) : null}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-sm text-slate-600">
-                      No se encontraron tareas en esta orden.
+        {pendingOrders.length === 0 ? (
+          <p className="text-sm text-slate-600">
+            No hay órdenes listas para revisión.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {pendingOrders.map((order) => {
+              const isSelected =
+                selectedOrder &&
+                Number(order.code) === Number(selectedOrder.code);
+              return (
+                <li
+                  key={order.code}
+                  className={`overflow-hidden rounded-lg border ${
+                    isSelected ? "border-blue-500" : "border-slate-200"
+                  } bg-white transition`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleSelectOrder(order.code)}
+                    className={`flex w-full flex-col gap-2 px-4 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-200 ${
+                      isSelected ? "bg-blue-50" : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-slate-900">
+                        Orden #{order.code}
+                      </span>
+                      <span className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                        Lista para revisión
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {order?.info?.Descripcion || "Sin descripción"}
                     </p>
-                  )}
-                </div>
-              </section>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <span>Unidad: {order?.info?.["N Unidad"] || "N/A"}</span>
+                      <span>
+                        Mantenedor: {order?.info?.asignado_a_name || "N/A"}
+                      </span>
+                    </div>
+                  </button>
 
-              <section className="space-y-2">
-                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Observaciones generales
-                </h4>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                  {selectedOrder?.info?.checkListDict?.otrasObservaciones?.trim() ||
-                    "Sin observaciones registradas."}
-                </div>
-              </section>
+                  {isSelected && selectedOrder ? (
+                    <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <h4 className="text-base font-semibold text-slate-900">
+                            Detalles de la orden
+                          </h4>
+                          <p className="text-sm text-slate-600">
+                            {selectedOrder?.info?.Descripcion ||
+                              "Sin descripción"}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-start gap-1 text-xs text-slate-500 md:items-end">
+                          <span>
+                            Unidad: {selectedOrder?.info?.["N Unidad"] || "N/A"}
+                          </span>
+                          <span>
+                            Mantenedor asignado:{" "}
+                            {selectedOrder?.info?.asignado_a_name || "N/A"}
+                          </span>
+                          <span>
+                            Checklist:{" "}
+                            {hasSupervisorSignature(
+                              selectedOrder?.info?.checkListDict
+                            )
+                              ? "Firmado"
+                              : "Sin firma"}
+                          </span>
+                        </div>
+                      </div>
 
-              {checklistError ? (
-                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {checklistError}
-                </div>
-              ) : null}
+                      {checklistStats ? (
+                        <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                          <span className="font-semibold text-blue-900">
+                            Resumen del checklist:
+                          </span>
+                          <span className="ml-2">Sí: {checklistStats.si}</span>
+                          <span className="ml-2">No: {checklistStats.no}</span>
+                          <span className="ml-2">N/A: {checklistStats.na}</span>
+                        </div>
+                      ) : null}
 
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleChecklistReview}
-                >
-                  Revisar checklist completo
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={loadOrders}
-                  disabled={loading}
-                >
-                  Volver a consultar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-600">
-              Selecciona una orden pendiente para ver sus detalles.
-            </div>
-          )}
-        </div>
+                      <section className="mt-4 space-y-2">
+                        <h5 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                          Detalles de tareas
+                        </h5>
+                        <div className="space-y-2">
+                          {Array.isArray(selectedOrder?.tasks?.data) ? (
+                            selectedOrder.tasks.data.map((task, index) => {
+                              const taller = task?.Taller || "Sin taller";
+                              const maintObs = task?.obs_assigned_to?.trim();
+                              return (
+                                <div
+                                  key={`${selectedOrder.code}-task-${index}`}
+                                  className="rounded-lg border border-slate-200 bg-white px-3 py-2"
+                                >
+                                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-slate-900">
+                                        Tarea {index + 1}:{" "}
+                                        {task?.Descripcion || "Sin descripción"}
+                                      </p>
+                                      <p className="text-xs text-slate-500">
+                                        Taller: {taller}
+                                      </p>
+                                    </div>
+                                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                                      {getTaskStatusLabel(task?.status)}
+                                    </span>
+                                  </div>
+                                  {maintObs ? (
+                                    <p className="mt-2 rounded-md border border-slate-100 bg-slate-50 p-2 text-xs text-slate-600">
+                                      Observación del mantenedor: {maintObs}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-sm text-slate-600">
+                              No se encontraron tareas en esta orden.
+                            </p>
+                          )}
+                        </div>
+                      </section>
+
+                      <section className="mt-4 space-y-2">
+                        <h5 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                          Observaciones generales
+                        </h5>
+                        <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                          {selectedOrder?.info?.checkListDict?.otrasObservaciones?.trim() ||
+                            "Sin observaciones registradas."}
+                        </div>
+                      </section>
+
+                      {checklistError ? (
+                        <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                          {checklistError}
+                        </div>
+                      ) : null}
+
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={handleChecklistReview}
+                        >
+                          Revisar checklist completo
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          onClick={loadOrders}
+                          disabled={loading}
+                        >
+                          Volver a consultar
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <section className="card p-4">
@@ -468,6 +530,53 @@ export default function ReviewOrder() {
         )}
         <p className="mt-3 text-xs text-slate-500">
           Próximamente podrás gestionar las órdenes anuladas desde esta vista.
+        </p>
+      </section>
+
+      <section className="card p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900">
+            Órdenes vencidas
+          </h3>
+          <span className="text-sm text-slate-500">{expiredOrders.length}</span>
+        </div>
+        {expiredOrders.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-600">
+            No hay órdenes vencidas asignadas por ti en esta especialidad.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {expiredOrders.map((order) => (
+              <li
+                key={`expired-${order.code}`}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600"
+              >
+                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <span className="font-semibold text-slate-900">
+                    Orden #{order.code}
+                  </span>
+                  <span className="text-xs uppercase tracking-wide text-orange-600">
+                    Vencida
+                  </span>
+                </div>
+                <p className="text-sm">
+                  {order?.info?.Descripcion || "Sin descripción"}
+                </p>
+                {order?.info?.obs_anulada ? (
+                  <p className="text-xs text-slate-500">
+                    Motivo:{" "}
+                    {Array.isArray(order.info.obs_anulada)
+                      ? order.info.obs_anulada.join(" - ")
+                      : String(order.info.obs_anulada)}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-xs text-slate-500">
+          Estas órdenes expiraron sin aprobación. Podrás reprogramarlas o
+          reasignarlas en próximas iteraciones.
         </p>
       </section>
 

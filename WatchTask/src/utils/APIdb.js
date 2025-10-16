@@ -1,13 +1,13 @@
 /**
  * @file APIdb.js
  * @description Dexie wrapper for IndexedDB.
- * Tables (final spec):
- *  - users: &code (PK), name, role, speciality, active, passwordHash
- *  - usersMeta: &version (PK), changeLog
- *  - orders: &code (PK), json blob from PDF ingestion (normalized)
- *  - ordersMeta: &version (PK), changeLog
  */
 import Dexie from "dexie";
+import {
+  addChileDays,
+  parseChileDateString,
+  startOfChileDay,
+} from "@/utils/timezone";
 
 let persistentStoragePromise;
 let persistentStorageStatus = {
@@ -97,7 +97,6 @@ export async function ensurePersistentStorage({ force = false } = {}) {
   })();
 
   persistentStoragePromise = request.finally(() => {
-    // allow posteriores reintentos si no se obtuvo persistencia
     if (!persistentStorageStatus.persisted || force) {
       persistentStoragePromise = null;
     }
@@ -220,6 +219,46 @@ const calculateOrderStatus = (tasks) => {
   if (hasInProgress) return 1;
   return 0;
 };
+
+const AUTO_EXPIRED_NOTE = "Anulada automaticamente por vencimiento";
+const computeExpirationInfo = (orderInfo) => {
+  if (!orderInfo) return null;
+  const startRaw = orderInfo["F inicial"] ?? orderInfo["F_inicial"];
+  const frequencyRaw = orderInfo["Frec. Dias"] ?? orderInfo["FrecDias"];
+
+  const startDateRaw = parseChileDateString(startRaw);
+  const frequencyDays = toInt(frequencyRaw);
+
+  if (!startDateRaw || !Number.isFinite(frequencyDays)) return null;
+
+  const startDate = startOfChileDay(startDateRaw);
+  if (!startDate) return null;
+
+  const dueDate = addChileDays(startDate, frequencyDays);
+  if (!dueDate) return null;
+
+  const expirationDate = addChileDays(startDate, frequencyDays + 2);
+  if (!expirationDate) return null;
+
+  return {
+    startDate,
+    frequencyDays,
+    dueDate,
+    expirationDate,
+  };
+};
+
+export function getOrderExpirationDetails(order) {
+  return computeExpirationInfo(order?.info || null);
+}
+
+export function isOrderExpired(order, referenceDate = new Date()) {
+  const info = computeExpirationInfo(order?.info || null);
+  if (!info) return false;
+  const reference = startOfChileDay(referenceDate);
+  if (!reference) return false;
+  return reference > info.expirationDate;
+}
 
 /**
  * Initialize DB and ensure PublicDBMeta exists at least with version 1.
@@ -509,53 +548,86 @@ export async function fetchOrdersByAssignedUser(userCode) {
 
 export async function markOrdersExpired(orderCodes) {
   await initAPIDB();
-  if (!Array.isArray(orderCodes) || orderCodes.length === 0) return 0;
 
-  const uniqueCodes = Array.from(
-    new Set(
-      orderCodes
-        .map((code) => toInt(code))
-        .filter((code) => Number.isFinite(code))
-    )
+  const codesSet = new Set(
+    Array.isArray(orderCodes)
+      ? orderCodes
+          .map((code) => toInt(code))
+          .filter((code) => Number.isFinite(code))
+      : []
   );
 
-  if (uniqueCodes.length === 0) return 0;
+  const allOrders = await db.orders.toArray();
+  if (!allOrders.length) return { expiredMarked: 0, restored: 0 };
 
-  let updatedCount = 0;
+  const today = startOfChileDay(new Date());
+  if (!today) return { expiredMarked: 0, restored: 0 };
 
-  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
-    for (const code of uniqueCodes) {
-      const order = await db.orders.get(code);
-      if (!order) continue;
+  const updates = [];
+  let expiredMarked = 0;
+  let restored = 0;
 
-      const currentStatus = Number(order?.info?.status);
-      if (currentStatus === 4) continue;
+  for (const order of allOrders) {
+    const code = toInt(order?.code);
+    if (!Number.isFinite(code)) continue;
 
-      const updatedOrder = {
-        ...order,
-        info: {
+    const status = Number(order?.info?.status);
+    const shouldEvaluate = codesSet.has(code) || status === 4;
+    if (!shouldEvaluate) continue;
+
+    const expirationInfo = computeExpirationInfo(order?.info || null);
+    const expired = expirationInfo
+      ? today > expirationInfo.expirationDate
+      : false;
+
+    if (expired) {
+      if (status !== 4) {
+        const nextInfo = {
           ...(order.info || {}),
           status: 4,
-          obs_anulada: "Anulada automaticamente por vencimiento",
-        },
+        };
+        if (!nextInfo.obs_anulada) {
+          nextInfo.obs_anulada = AUTO_EXPIRED_NOTE;
+        }
+        updates.push({
+          ...order,
+          info: nextInfo,
+        });
+        expiredMarked += 1;
+      }
+    } else if (status === 4) {
+      const nextStatus = calculateOrderStatus(order?.tasks?.data);
+      const nextInfo = {
+        ...(order.info || {}),
+        status: nextStatus,
       };
-
-      await db.orders.put(updatedOrder);
-      updatedCount += 1;
+      if (nextInfo.obs_anulada === AUTO_EXPIRED_NOTE) {
+        delete nextInfo.obs_anulada;
+      }
+      updates.push({
+        ...order,
+        info: nextInfo,
+      });
+      restored += 1;
     }
-
-    if (updatedCount > 0) {
-      await bumpOrdersVersion(`mark expired orders (${updatedCount})`);
-    }
-  });
-
-  if (updatedCount > 0) {
-    try {
-      notifyOrdersChanged("orders-expired");
-    } catch {}
   }
 
-  return updatedCount;
+  if (!updates.length) {
+    return { expiredMarked, restored };
+  }
+
+  await db.transaction("rw", db.orders, db.ordersMeta, async () => {
+    await db.orders.bulkPut(updates);
+    await bumpOrdersVersion(
+      `revalidate expired orders (marked ${expiredMarked}, restored ${restored})`
+    );
+  });
+
+  try {
+    notifyOrdersChanged("orders-expired");
+  } catch {}
+
+  return { expiredMarked, restored };
 }
 
 export async function cancelOrder(orderCode, reason, detail) {
