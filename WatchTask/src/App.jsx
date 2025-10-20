@@ -5,7 +5,7 @@ import { PeerProvider } from "@/p2p/PeerContext";
 import PeerDebugPanel from "@/p2p/PeerDebugPanel";
 import { AuthProvider, useAuth } from "@/Context/AuthContext";
 import Login from "@/pages/Login";
-import AdminDashboard from "@/pages/AdminDashboard";
+import Admin from "@/pages/Admin";
 import Supervisor from "@/pages/Supervisor";
 import Mantenedor from "@/pages/Mantenedor";
 import OrderDetail from "@/pages/OrderDetail";
@@ -44,7 +44,7 @@ function App() {
                   path="/admin"
                   element={
                     <ProtectedRoute roles={["admin"]}>
-                      <AdminDashboard />
+                      <Admin />
                     </ProtectedRoute>
                   }
                 />

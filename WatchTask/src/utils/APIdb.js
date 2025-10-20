@@ -237,7 +237,7 @@ const computeExpirationInfo = (orderInfo) => {
   const dueDate = addChileDays(startDate, frequencyDays);
   if (!dueDate) return null;
 
-  const expirationDate = addChileDays(startDate, frequencyDays + 2);
+  const expirationDate = addChileDays(startDate, frequencyDays + 4);
   if (!expirationDate) return null;
 
   return {
@@ -422,40 +422,141 @@ export async function addUser({
   speciality = null,
   active = true,
   password,
+  signature = null,
 }) {
   await initAPIDB();
-  const c = toInt(code);
-  if (!Number.isFinite(c)) throw new Error("code must be an integer");
-  if (!name || !role) throw new Error("name and role are required");
+
+  const numericCode = toInt(code);
+  if (!Number.isFinite(numericCode)) {
+    throw new Error("El código debe ser un número entero válido.");
+  }
+
+  const trimmedName = String(name ?? "").trim();
+  if (!trimmedName) {
+    throw new Error("El nombre es obligatorio.");
+  }
+
+  const normalizedRole = String(role ?? "").trim();
+  if (!normalizedRole) {
+    throw new Error("El rol es obligatorio.");
+  }
+
+  const requiresSpeciality =
+    normalizedRole === "supervisor" || normalizedRole === "mantenedor";
+  const specialityValue = toInt(speciality);
+  if (requiresSpeciality && !Number.isFinite(specialityValue)) {
+    throw new Error("Selecciona una especialidad válida.");
+  }
+
   const passwordHash =
     typeof password === "string" && password.length
       ? simpleHash(password)
       : undefined;
+
   await db.transaction("rw", db.users, db.usersMeta, async () => {
-    await db.users.put({
-      code: c,
-      name: String(name).trim(),
-      role,
-      speciality: speciality ?? null,
+    const exists = await db.users.get(numericCode);
+    if (exists) {
+      throw new Error("Ya existe un usuario con ese código.");
+    }
+
+    const timestamp = nowISO();
+    await db.users.add({
+      code: numericCode,
+      name: trimmedName,
+      role: normalizedRole,
+      speciality:
+        requiresSpeciality && Number.isFinite(specialityValue)
+          ? specialityValue
+          : null,
       active: !!active,
+      signature: signature ?? null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
       ...(passwordHash ? { passwordHash } : {}),
     });
-    await bumpUsersVersion(`add user ${c}`);
+    await bumpUsersVersion(`add user ${numericCode}`);
   });
   try {
     notifyUsersChanged("add-user");
   } catch {}
 }
 
-export async function updateUser(code, patch) {
+export async function updateUser(code, patch = {}) {
   await initAPIDB();
-  const c = toInt(code);
-  const prev = await db.users.get(c);
-  if (!prev) throw new Error("user not found");
-  const next = { ...prev, ...patch };
+  const numericCode = toInt(code);
+  if (!Number.isFinite(numericCode)) {
+    throw new Error("El código debe ser un número entero válido.");
+  }
+
+  const existing = await db.users.get(numericCode);
+  if (!existing) {
+    throw new Error("El usuario especificado no existe.");
+  }
+
+  const next = { ...existing };
+
+  const nameValue = Object.prototype.hasOwnProperty.call(patch, "name")
+    ? String(patch.name ?? "").trim()
+    : String(existing.name ?? "").trim();
+  if (!nameValue) {
+    throw new Error("El nombre es obligatorio.");
+  }
+  next.name = nameValue;
+
+  const roleValue = Object.prototype.hasOwnProperty.call(patch, "role")
+    ? String(patch.role ?? "").trim()
+    : String(existing.role ?? "").trim();
+  if (!roleValue) {
+    throw new Error("El rol es obligatorio.");
+  }
+  next.role = roleValue;
+
+  const requiresSpeciality =
+    roleValue === "supervisor" || roleValue === "mantenedor";
+
+  if (Object.prototype.hasOwnProperty.call(patch, "speciality")) {
+    const parsedSpeciality = toInt(patch.speciality);
+    if (requiresSpeciality) {
+      if (!Number.isFinite(parsedSpeciality)) {
+        throw new Error("Selecciona una especialidad válida.");
+      }
+      next.speciality = parsedSpeciality;
+    } else {
+      next.speciality = Number.isFinite(parsedSpeciality)
+        ? parsedSpeciality
+        : null;
+    }
+  } else if (requiresSpeciality) {
+    const currentSpeciality = toInt(next.speciality);
+    if (!Number.isFinite(currentSpeciality)) {
+      throw new Error("Selecciona una especialidad válida.");
+    }
+    next.speciality = currentSpeciality;
+  } else {
+    next.speciality = null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "active")) {
+    next.active = !!patch.active;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "signature")) {
+    next.signature = patch.signature ?? null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, "password")) {
+    const passwordValue =
+      typeof patch.password === "string" ? patch.password.trim() : "";
+    if (passwordValue) {
+      next.passwordHash = simpleHash(passwordValue);
+    }
+  }
+
+  next.updatedAt = patch?.updatedAt ?? nowISO();
+
   await db.transaction("rw", db.users, db.usersMeta, async () => {
     await db.users.put(next);
-    await bumpUsersVersion(`update user ${c}`);
+    await bumpUsersVersion(`update user ${numericCode}`);
   });
   try {
     notifyUsersChanged("update-user");
@@ -770,6 +871,7 @@ export async function completeOrderTask(orderCode, taskIndex, updates = {}) {
   }
 
   if (!nextTask.init_task) {
+    // TODO: revisar, zona horaria, formato y consistencia
     nextTask.init_task = timestamp;
   }
 
@@ -955,34 +1057,80 @@ export async function getOrdersSnapshotForUser(userCode) {
   return { meta, orders };
 }
 
-export async function applyOrdersSnapshot({ meta, orders }) {
+export async function applyOrdersSnapshot({ meta, orders }, context = {}) {
   await initAPIDB();
   const localMeta = await getOrdersMeta();
   const localVer = localMeta?.version || 0;
   const incomingVer = meta?.version || 0;
   if (incomingVer <= localVer)
     return { applied: false, reason: "stale-version" };
+  const normalized = Array.isArray(orders)
+    ? orders
+        .map((o) => {
+          const vals = [
+            o.code,
+            o?.info?.["Numero orden"],
+            o?.["Numero orden"],
+            o?.Numero,
+            o.id,
+          ];
+          for (const v of vals) {
+            const n = Number.parseInt?.(String(v || "").trim(), 10);
+            if (Number.isFinite(n)) return { ...o, code: n };
+          }
+          return null;
+        })
+        .filter(Boolean)
+    : [];
+  const keepCodes = new Set(
+    normalized
+      .map((order) => toInt(order?.code))
+      .filter((code) => Number.isFinite(code))
+  );
+
   await db.transaction("rw", db.orders, db.ordersMeta, async () => {
-    if (Array.isArray(orders) && orders.length) {
-      await db.orders.bulkPut(
-        orders
-          .map((o) => {
-            const vals = [
-              o.code,
-              o?.info?.["Numero orden"],
-              o?.["Numero orden"],
-              o?.Numero,
-              o.id,
-            ];
-            for (const v of vals) {
-              const n = Number.parseInt?.(String(v || "").trim(), 10);
-              if (Number.isFinite(n)) return { ...o, code: n };
-            }
-            return null;
-          })
-          .filter(Boolean)
-      );
+    const scopedRemoval = async () => {
+      if (context?.userCode != null) {
+        const targetUser = toInt(context.userCode);
+        if (!Number.isFinite(targetUser)) return;
+        const existing = await db.orders
+          .filter(
+            (order) => Number(order?.info?.asignado_a_code) === targetUser
+          )
+          .toArray();
+        const toRemove = existing
+          .map((order) => toInt(order?.code))
+          .filter((code) => Number.isFinite(code) && !keepCodes.has(code));
+        if (toRemove.length) {
+          await db.orders.bulkDelete(Array.from(new Set(toRemove)));
+        }
+        return;
+      }
+
+      if (context?.speciality != null) {
+        const targetSpeciality = toInt(context.speciality);
+        if (!Number.isFinite(targetSpeciality)) return;
+        const existing = await db.orders
+          .filter(
+            (order) =>
+              Number(order?.info?.["Especialidad_id"]) === targetSpeciality
+          )
+          .toArray();
+        const toRemove = existing
+          .map((order) => toInt(order?.code))
+          .filter((code) => Number.isFinite(code) && !keepCodes.has(code));
+        if (toRemove.length) {
+          await db.orders.bulkDelete(Array.from(new Set(toRemove)));
+        }
+      }
+    };
+
+    await scopedRemoval(); // Remove stale assignments for scoped snapshots
+
+    if (normalized.length) {
+      await db.orders.bulkPut(normalized);
     }
+
     await db.ordersMeta.put({
       version: incomingVer,
       changeLog: meta?.changeLog || [],

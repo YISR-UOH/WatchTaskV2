@@ -99,20 +99,49 @@ export function PeerProvider({ children }) {
   const DC_BUFFER_LOW =
     Number.parseInt(import.meta.env.VITE_DC_BUFFER_LOW, 10) ||
     Math.floor(DC_BUFFER_MAX / 2);
-  const STUN_URLS = (
-    import.meta.env.VITE_STUN_URLS ||
-    [
-      "stun:stun.l.google.com:19302",
-      "stun:stun1.l.google.com:19302",
-      "stun:stun2.l.google.com:19302",
-      "stun:stun3.l.google.com:19302",
-      "stun:stun4.l.google.com:19302",
-    ].join(",")
-  )
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const ICE_SERVERS = STUN_URLS.map((u) => ({ urls: u }));
+
+  const username = import.meta.env.VITE_TURN_USERNAME;
+  const credential = import.meta.env.VITE_TURN_CREDENTIAL;
+  const ICE_SERVERS = [
+    {
+      urls: "stun:stun.l.google.com:19302",
+    },
+    {
+      urls: "stun:stun1.l.google.com:19302",
+    },
+    {
+      urls: "stun:stun2.l.google.com:19302",
+    },
+    {
+      urls: "stun:stun3.l.google.com:19302",
+    },
+    {
+      urls: "stun:stun4.l.google.com:19302",
+    },
+    {
+      urls: "stun:stun.relay.metered.ca:80",
+    },
+    {
+      urls: "turn:standard.relay.metered.ca:80",
+      username: username,
+      credential: credential,
+    },
+    {
+      urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+      username: username,
+      credential: credential,
+    },
+    {
+      urls: "turn:standard.relay.metered.ca:443",
+      username: username,
+      credential: credential,
+    },
+    {
+      urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+      username: username,
+      credential: credential,
+    },
+  ];
 
   const [peerId, setPeerId] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -473,8 +502,6 @@ export function PeerProvider({ children }) {
             // Send only assigned orders to maintainers
             getOrdersSnapshotForUser(remoteHello.user.code)
               .then((ordersSnap) => {
-                const orders = ordersSnap.orders || [];
-                if (!orders.length) return;
                 sendEfficientData(remoteId, ordersSnap, "ordersSnapshot", {
                   fromAuth: true,
                   userCode: remoteHello.user.code,
@@ -487,8 +514,6 @@ export function PeerProvider({ children }) {
               remoteHello.user?.speciality ?? me.speciality ?? null;
             getOrdersSnapshotForSpeciality(specialityToSend)
               .then((ordersSnap) => {
-                const orders = ordersSnap.orders || [];
-                if (!orders.length) return;
                 sendEfficientData(remoteId, ordersSnap, "ordersSnapshot", {
                   fromAuth: true,
                   speciality: specialityToSend,
@@ -742,12 +767,17 @@ export function PeerProvider({ children }) {
           if (msg.type === "dataChunk") {
             // Handle efficient chunked data
             const payload = msg.payload || {};
-            const chunkKey = `${remoteId}-${payload.originalType}-${
-              payload.metadata?.speciality || "all"
-            }`;
+            const metadata = payload.metadata || {};
+            const scopeKey =
+              metadata.userCode != null
+                ? `user-${metadata.userCode}`
+                : metadata.speciality != null
+                ? `spec-${metadata.speciality}`
+                : "all";
+            const chunkKey = `${remoteId}-${payload.originalType}-${scopeKey}`;
             const remoteHello =
               remoteInfoRef.current?.[remoteId]?.hello || null;
-            const authorized = remoteHello?.auth || payload.metadata?.fromAuth;
+            const authorized = remoteHello?.auth || metadata.fromAuth;
 
             if (!authorized) {
               dlog("dataChunk rechazado", remoteId);
@@ -760,7 +790,7 @@ export function PeerProvider({ children }) {
                 total: payload.total,
                 compressed: payload.compressed,
                 originalType: payload.originalType,
-                metadata: payload.metadata,
+                metadata,
               };
             }
 
@@ -807,7 +837,7 @@ export function PeerProvider({ children }) {
                       dlog("applyUsersSnapshot efficient error", String(err))
                     );
                 } else if (accumulator.originalType === "ordersSnapshot") {
-                  applyOrdersSnapshot(finalData)
+                  applyOrdersSnapshot(finalData, accumulator.metadata || {})
                     .then((res) => {
                       dlog(
                         "applyOrdersSnapshot efficient",
@@ -874,13 +904,23 @@ export function PeerProvider({ children }) {
               remoteInfoRef.current?.[remoteId]?.hello || null;
             const authorized = remoteHello?.auth || msg?.fromAuth;
             if (!authorized) return;
-            const key = `${remoteId}-${msg.speciality}`;
+            const scopeKey =
+              msg?.userCode != null
+                ? `user-${msg.userCode}`
+                : msg?.speciality != null
+                ? `spec-${msg.speciality}`
+                : "all";
+            const key = `${remoteId}-${scopeKey}`;
             const payload = msg.payload || {};
             if (!accumulatingOrdersRef.current[key]) {
               accumulatingOrdersRef.current[key] = {
                 meta: payload.meta,
                 orders: [],
                 total: payload.total ?? 0,
+                context: {
+                  speciality: msg.speciality,
+                  userCode: msg.userCode,
+                },
               };
             }
             const bucket = accumulatingOrdersRef.current[key];
@@ -896,7 +936,7 @@ export function PeerProvider({ children }) {
                 meta: bucket.meta,
                 orders: bucket.orders,
               };
-              applyOrdersSnapshot(assembled)
+              applyOrdersSnapshot(assembled, bucket.context || {})
                 .then((res) => {
                   dlog(
                     "applyOrdersSnapshot chunks",
@@ -937,7 +977,10 @@ export function PeerProvider({ children }) {
               }
             }
 
-            applyOrdersSnapshot(payload || {})
+            applyOrdersSnapshot(payload || {}, {
+              speciality: msg.speciality,
+              userCode: msg.userCode,
+            })
               .then((res) => {
                 dlog(
                   "applyOrdersSnapshot direct",

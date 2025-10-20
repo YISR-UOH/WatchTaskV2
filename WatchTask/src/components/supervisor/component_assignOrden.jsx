@@ -17,6 +17,7 @@ import {
   bulkUpsertOrders,
   fetchOrdersBySpeciality,
   listUsers,
+  cancelOrder,
 } from "@/utils/APIdb";
 import { usePeer } from "@/p2p/PeerContext";
 import { unstable_Activity, Activity as ActivityStable } from "react";
@@ -37,6 +38,11 @@ const SERVICES = {
   EXP: "EXPEDICION",
   TM: "TALLER",
   EDI: "EDIFICIO",
+};
+const ORDER_CANCELLED = {
+  0: "NO MANTENCION",
+  1: "FALTA REPUESTO",
+  2: "OTRO",
 };
 const N_viewOrders = 20; // numero de ordenes a mostrar
 
@@ -61,6 +67,33 @@ export default function AssignOrden() {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState(null);
+  const [cancelModal, setCancelModal] = useState({
+    open: false,
+    orderCodes: [],
+  });
+  const [canceling, setCanceling] = useState(false);
+
+  const loadOrders = useCallback(async () => {
+    if (!user?.speciality) {
+      setOrders([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchOrdersBySpeciality(user.speciality);
+      setOrders(Array.isArray(data) ? data : []);
+      setCurrentPage(0);
+    } catch (err) {
+      setError(
+        err?.message || "No se pudieron obtener las órdenes disponibles."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.speciality]);
   const selectTask = (orderCode) => {
     if (actualOrder == orderCode) {
       setHiddenTasks(!hiddenTasks);
@@ -97,19 +130,8 @@ export default function AssignOrden() {
     setCurrentPage(0);
   }, [selectMachine, selectServices, searchTerm]);
   useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-    fetchOrdersBySpeciality(user.speciality)
-      .then((data) => {
-        setOrders(data);
-        setCurrentPage(0);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [user]);
+    loadOrders();
+  }, [loadOrders]);
 
   useEffect(() => {
     if (!user) {
@@ -181,6 +203,30 @@ export default function AssignOrden() {
       setAssignError(null);
     }
   }, [assignError, selectedMaintainer]);
+
+  const openCancelModal = useCallback((orderCodes) => {
+    const numericCodes = Array.from(
+      new Set(
+        (orderCodes || [])
+          .map((code) => Number(code))
+          .filter((code) => Number.isFinite(code))
+      )
+    );
+    if (!numericCodes.length) return;
+    setCancelModal({ open: true, orderCodes: numericCodes });
+  }, []);
+
+  const closeCancelModal = useCallback(() => {
+    setCancelModal({ open: false, orderCodes: [] });
+  }, []);
+
+  const handleCancelSelected = () => {
+    openCancelModal(selectedOrders);
+  };
+
+  const handleCancelSingle = (orderCode) => {
+    openCancelModal([orderCode]);
+  };
 
   /**
    * Calcular las ordenes que no estan completadas, anuladas o vencidas
@@ -407,6 +453,82 @@ export default function AssignOrden() {
     assignOrders([orderCode]);
   };
 
+  const handleConfirmCancellation = useCallback(
+    async ({ reasonKey, comment, orderCodes }) => {
+      const reasonLabel = ORDER_CANCELLED[reasonKey];
+      if (!reasonLabel) {
+        throw new Error("Selecciona un motivo de anulación.");
+      }
+
+      const trimmedComment = comment.trim();
+      if (!trimmedComment) {
+        throw new Error("Agrega un comentario para anular la orden.");
+      }
+
+      const numericCodes = Array.from(
+        new Set(
+          (orderCodes || [])
+            .map((code) => Number(code))
+            .filter((code) => Number.isFinite(code))
+        )
+      );
+
+      if (!numericCodes.length) {
+        throw new Error("No hay órdenes seleccionadas para anular.");
+      }
+
+      const codesSet = new Set(numericCodes);
+      const affectedMaintainers = new Set();
+
+      setCanceling(true);
+
+      try {
+        for (const order of orders) {
+          const numericCode = Number(order?.code);
+          if (!codesSet.has(numericCode)) continue;
+          const assigned = Number(order?.info?.asignado_a_code);
+          if (Number.isFinite(assigned)) {
+            affectedMaintainers.add(assigned);
+          }
+        }
+
+        for (const numeric of numericCodes) {
+          await cancelOrder(numeric, reasonLabel, trimmedComment);
+        }
+
+        if (typeof broadcastSync === "function") {
+          await broadcastSync();
+        }
+
+        if (typeof sendOrdersToUser === "function") {
+          const targets = Array.from(affectedMaintainers).filter((code) =>
+            Number.isFinite(code)
+          );
+          for (const code of targets) {
+            await sendOrdersToUser(code);
+          }
+        }
+
+        setOrders((prev) =>
+          prev.filter((order) => !codesSet.has(Number(order?.code)))
+        );
+        setSelectedOrders((prev) =>
+          prev.filter((code) => !codesSet.has(Number(code)))
+        );
+        setHiddenTasks(false);
+        setHiddenProtocolos(false);
+        setActualOrder(null);
+        setTaskActionError(null);
+
+        await loadOrders();
+        return true;
+      } finally {
+        setCanceling(false);
+      }
+    },
+    [broadcastSync, loadOrders, orders, sendOrdersToUser]
+  );
+
   if (loading) return <div>Cargando ordenes...</div>;
   if (error) return <div>Error al cargar ordenes: {error}</div>;
   if (orders.length === 0) return <div>No hay ordenes para asignar.</div>;
@@ -518,6 +640,16 @@ export default function AssignOrden() {
                   ? "Asignando..."
                   : `Asignar (${selectedOrders.length})`}
               </button>
+              <button
+                type="button"
+                className="btn btn-outline text-red-600 border-red-500 hover:bg-red-50"
+                onClick={handleCancelSelected}
+                disabled={canceling || selectedOrders.length === 0}
+              >
+                {canceling
+                  ? "Anulando..."
+                  : `Anular (${selectedOrders.length})`}
+              </button>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
@@ -582,6 +714,14 @@ export default function AssignOrden() {
                         "/" +
                         order.tasks.Tasks_N}
                     </span>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm border-red-500 text-red-600 hover:bg-red-50"
+                      onClick={() => handleCancelSingle(order.code)}
+                      disabled={canceling}
+                    >
+                      {canceling ? "Anulando..." : "Anular"}
+                    </button>
                     <button
                       className="btn btn-outline btn-sm"
                       onClick={() => handleAssignSingle(order.code)}
@@ -709,6 +849,160 @@ export default function AssignOrden() {
         >
           Siguiente
         </button>
+      </div>
+      <CancelOrdersModal
+        open={cancelModal.open}
+        orderCodes={cancelModal.orderCodes}
+        busy={canceling}
+        onClose={closeCancelModal}
+        onConfirm={handleConfirmCancellation}
+      />
+    </div>
+  );
+}
+
+function CancelOrdersModal({ open, orderCodes, busy, onClose, onConfirm }) {
+  const [reasonKey, setReasonKey] = useState("");
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (open) {
+      setReasonKey("");
+      setComment("");
+      setError(null);
+    }
+  }, [open, orderCodes]);
+
+  if (!open) return null;
+
+  const handleReasonChange = (event) => {
+    setReasonKey(event.target.value);
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleCommentChange = (event) => {
+    setComment(event.target.value);
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!Object.prototype.hasOwnProperty.call(ORDER_CANCELLED, reasonKey)) {
+      setError("Selecciona un motivo de anulación.");
+      return;
+    }
+
+    const trimmedComment = comment.trim();
+    if (!trimmedComment) {
+      setError("Agrega un comentario para anular la orden.");
+      return;
+    }
+
+    try {
+      await onConfirm({
+        reasonKey,
+        comment: trimmedComment,
+        orderCodes,
+      });
+      onClose();
+    } catch (err) {
+      setError(
+        err?.message || "No se pudieron anular las órdenes seleccionadas."
+      );
+    }
+  };
+
+  const modalTitle =
+    orderCodes.length > 1
+      ? `Anular ${orderCodes.length} órdenes`
+      : `Anular orden #${orderCodes[0]}`;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-4">
+      <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+        <header className="border-b border-slate-200 px-4 py-3">
+          <h2 className="text-lg font-semibold text-slate-900">{modalTitle}</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Esta acción marcará las órdenes como anuladas con el motivo
+            seleccionado.
+          </p>
+        </header>
+        <div className="space-y-4 px-4 py-4">
+          <div>
+            <label
+              className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+              htmlFor="assign-cancel-reason"
+            >
+              Motivo de anulación
+            </label>
+            <select
+              id="assign-cancel-reason"
+              className="input w-full"
+              value={reasonKey}
+              onChange={handleReasonChange}
+              disabled={busy}
+            >
+              <option value="">Seleccionar motivo</option>
+              {Object.entries(ORDER_CANCELLED).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+              htmlFor="assign-cancel-comment"
+            >
+              Comentario
+            </label>
+            <textarea
+              id="assign-cancel-comment"
+              className="input w-full resize-y"
+              rows={3}
+              placeholder="Describe brevemente la razón de la anulación"
+              value={comment}
+              onChange={handleCommentChange}
+              disabled={busy}
+            />
+          </div>
+          {error ? (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
+          <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span className="font-semibold text-slate-700">
+              Órdenes seleccionadas:
+            </span>
+            <span className="ml-1 font-mono">
+              {orderCodes.map((code) => `#${code}`).join(", ")}
+            </span>
+          </div>
+        </div>
+        <footer className="flex justify-end gap-3 border-t border-slate-200 px-4 py-3">
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Cerrar
+          </button>
+          <button
+            type="button"
+            className="btn bg-red-600 text-white hover:bg-red-700"
+            onClick={handleConfirm}
+            disabled={busy}
+          >
+            {busy ? "Anulando..." : "Confirmar anulación"}
+          </button>
+        </footer>
       </div>
     </div>
   );

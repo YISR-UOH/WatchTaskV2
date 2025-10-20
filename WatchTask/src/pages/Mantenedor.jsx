@@ -192,6 +192,17 @@ export default function Mantenedor() {
   }, [loadAssignedOrders]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleOrdersChanged = () => {
+      loadAssignedOrders();
+    };
+    window.addEventListener("orders:changed", handleOrdersChanged);
+    return () => {
+      window.removeEventListener("orders:changed", handleOrdersChanged);
+    };
+  }, [loadAssignedOrders]);
+
+  useEffect(() => {
     setSelectMachine("");
     setSelectService("");
     setSearchTerm("");
