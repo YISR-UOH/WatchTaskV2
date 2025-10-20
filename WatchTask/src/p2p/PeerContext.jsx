@@ -100,80 +100,33 @@ export function PeerProvider({ children }) {
     Number.parseInt(import.meta.env.VITE_DC_BUFFER_LOW, 10) ||
     Math.floor(DC_BUFFER_MAX / 2);
 
-  const username = (import.meta.env.VITE_TURN_USERNAME || "").trim();
-  const credential = (import.meta.env.VITE_TURN_CREDENTIAL || "").trim();
   const TURN_API_URL = (import.meta.env.VITE_TURN_CREDENTIALS_URL || "").trim();
   const TURN_API_KEY = (import.meta.env.VITE_TURN_API_KEY || "").trim();
 
-  const BASE_STUN_SERVERS = useMemo(
-    () => [
-      { urls: "stun:stun.relay.metered.ca:80" },
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun.l.google.com:5349" },
-      { urls: "stun:stun1.l.google.com:3478" },
-      { urls: "stun:stun1.l.google.com:5349" },
-      { urls: "stun:stun2.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:5349" },
-      { urls: "stun:stun3.l.google.com:3478" },
-      { urls: "stun:stun3.l.google.com:5349" },
-      { urls: "stun:stun4.l.google.com:19302" },
-      { urls: "stun:stun4.l.google.com:5349" },
-    ],
-    []
-  );
+  const iceServersHashRef = useRef("[]");
+  const [dynamicIceServers, setDynamicIceServers] = useState([]);
+  const iceFetchInFlightRef = useRef(false);
 
-  const fallbackTurnServers = useMemo(() => {
-    if (!username || !credential) return [];
-    return [
-      {
-        urls: "turn:standard.relay.metered.ca:80",
-        username,
-        credential,
-      },
-      {
-        urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-        username,
-        credential,
-      },
-      {
-        urls: "turn:standard.relay.metered.ca:443",
-        username,
-        credential,
-      },
-      {
-        urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-        username,
-        credential,
-      },
-    ];
-  }, [credential, username]);
-
-  const turnServersRef = useRef(fallbackTurnServers);
-  const turnServersHashRef = useRef(JSON.stringify(fallbackTurnServers || []));
-  const [dynamicTurnServers, setDynamicTurnServers] =
-    useState(fallbackTurnServers);
-  const turnFetchInFlightRef = useRef(false);
-
-  const effectiveTurnServers = useMemo(
+  const effectiveIceServers = useMemo(
     () =>
-      Array.isArray(dynamicTurnServers) && dynamicTurnServers.length
-        ? dynamicTurnServers
-        : fallbackTurnServers,
-    [dynamicTurnServers, fallbackTurnServers]
+      Array.isArray(dynamicIceServers) && dynamicIceServers.length
+        ? dynamicIceServers
+        : [],
+    [dynamicIceServers]
   );
 
-  const ICE_SERVERS = useMemo(
-    () => [...BASE_STUN_SERVERS, ...(effectiveTurnServers || [])],
-    [BASE_STUN_SERVERS, effectiveTurnServers]
-  );
+  const ICE_SERVERS = effectiveIceServers;
 
-  const TURN_ONLY_SERVERS = useMemo(
-    () =>
-      Array.isArray(effectiveTurnServers) && effectiveTurnServers.length
-        ? effectiveTurnServers
-        : fallbackTurnServers,
-    [effectiveTurnServers, fallbackTurnServers]
-  );
+  const TURN_ONLY_SERVERS = useMemo(() => {
+    if (!effectiveIceServers.length) return [];
+    const onlyTurn = effectiveIceServers.filter((entry) => {
+      const urls = Array.isArray(entry.urls)
+        ? entry.urls.join(" ").toLowerCase()
+        : String(entry.urls || "").toLowerCase();
+      return urls.includes("turn");
+    });
+    return onlyTurn.length ? onlyTurn : effectiveIceServers;
+  }, [effectiveIceServers]);
 
   const [peerId, setPeerId] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -231,7 +184,7 @@ export function PeerProvider({ children }) {
     [ICE_SERVERS, TURN_ONLY_SERVERS]
   );
 
-  const applyTurnServers = useCallback(
+  const applyIceServers = useCallback(
     (servers) => {
       if (!mountedRef.current) return false;
       const sanitized = Array.isArray(servers)
@@ -255,22 +208,21 @@ export function PeerProvider({ children }) {
       if (!sanitized.length) return false;
 
       const serialized = JSON.stringify(sanitized);
-      if (serialized === turnServersHashRef.current) {
+      if (serialized === iceServersHashRef.current) {
         return false;
       }
 
-      turnServersRef.current = sanitized;
-      turnServersHashRef.current = serialized;
-      setDynamicTurnServers(sanitized);
+      iceServersHashRef.current = serialized;
+      setDynamicIceServers(sanitized);
       return true;
     },
-    [setDynamicTurnServers]
+    [setDynamicIceServers]
   );
 
-  const fetchTurnCredentials = useCallback(async () => {
+  const fetchIceServers = useCallback(async () => {
     if (!TURN_API_URL) return [];
     if (typeof fetch !== "function") {
-      dlog("fetch TURN credentials no disponible en este entorno");
+      dlog("fetch ICE servers no disponible en este entorno");
       return [];
     }
     try {
@@ -290,26 +242,31 @@ export function PeerProvider({ children }) {
         throw new Error(`HTTP ${response.status}`);
       }
       const data = await response.json();
-      applyTurnServers(data);
-      return data;
+      const servers = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.iceServers)
+        ? data.iceServers
+        : [];
+      applyIceServers(servers);
+      return servers;
     } catch (error) {
-      dlog("fetch TURN credentials error", String(error));
+      dlog("fetch ICE servers error", String(error));
       return [];
     }
-  }, [TURN_API_KEY, TURN_API_URL, applyTurnServers, dlog]);
+  }, [TURN_API_KEY, TURN_API_URL, applyIceServers, dlog]);
 
-  const requestTurnCredentials = useCallback(() => {
+  const requestIceServers = useCallback(() => {
     if (!TURN_API_URL) return;
-    if (turnFetchInFlightRef.current) return;
-    turnFetchInFlightRef.current = true;
-    fetchTurnCredentials()
+    if (iceFetchInFlightRef.current) return;
+    iceFetchInFlightRef.current = true;
+    fetchIceServers()
       .catch(() => {
         /* error already logged */
       })
       .finally(() => {
-        turnFetchInFlightRef.current = false;
+        iceFetchInFlightRef.current = false;
       });
-  }, [TURN_API_URL, fetchTurnCredentials]);
+  }, [TURN_API_URL, fetchIceServers]);
 
   const markRemoteForTurnOnly = useCallback(
     (remoteId, reason) => {
@@ -318,10 +275,10 @@ export function PeerProvider({ children }) {
       }
       connectionIceModeRef.current.set(remoteId, "turn-only");
       dlog("Forzando TURN para peer", remoteId, reason);
-      requestTurnCredentials();
+      requestIceServers();
       return true;
     },
-    [dlog, requestTurnCredentials]
+    [dlog, requestIceServers]
   );
 
   const enqueueReconnect = useCallback((remoteId) => {
@@ -609,8 +566,8 @@ export function PeerProvider({ children }) {
   );
 
   useEffect(() => {
-    requestTurnCredentials();
-  }, [requestTurnCredentials]);
+    requestIceServers();
+  }, [requestIceServers]);
 
   const broadcastSync = useCallback(async () => {
     try {
@@ -1194,6 +1151,9 @@ export function PeerProvider({ children }) {
     (remoteId) => {
       const previous = connectionsRef.current[remoteId];
       if (previous?.pc) return previous;
+      if (!ICE_SERVERS.length) {
+        requestIceServers();
+      }
       const iceServers = getIceServersForRemote(remoteId);
       const pc = new RTCPeerConnection({ iceServers });
       const conn = {
@@ -1282,7 +1242,9 @@ export function PeerProvider({ children }) {
       cleanupConnection,
       dlog,
       getIceServersForRemote,
+      ICE_SERVERS,
       markRemoteForTurnOnly,
+      requestIceServers,
       peerId,
       setupDataChannel,
     ]
@@ -1292,6 +1254,12 @@ export function PeerProvider({ children }) {
     async (remoteId) => {
       if (!peerId) return;
       if (!isOnlineRef.current) {
+        pendingConnectSetRef.current.add(remoteId);
+        return;
+      }
+      if (!ICE_SERVERS.length) {
+        dlog("Sin ICE servers de Metered todavía, reintentando", remoteId);
+        requestIceServers();
         pendingConnectSetRef.current.add(remoteId);
         return;
       }
@@ -1317,7 +1285,7 @@ export function PeerProvider({ children }) {
         makingOfferRef.current[remoteId] = false;
       }
     },
-    [dlog, ensurePeerConnection, peerId]
+    [ICE_SERVERS, dlog, ensurePeerConnection, peerId, requestIceServers]
   );
 
   const connectToPeerRef = useRef();
