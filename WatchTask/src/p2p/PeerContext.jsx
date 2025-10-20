@@ -100,61 +100,79 @@ export function PeerProvider({ children }) {
     Number.parseInt(import.meta.env.VITE_DC_BUFFER_LOW, 10) ||
     Math.floor(DC_BUFFER_MAX / 2);
 
-  const username = import.meta.env.VITE_TURN_USERNAME;
-  const credential = import.meta.env.VITE_TURN_CREDENTIAL;
-  const ICE_SERVERS = useMemo(
+  const username = (import.meta.env.VITE_TURN_USERNAME || "").trim();
+  const credential = (import.meta.env.VITE_TURN_CREDENTIAL || "").trim();
+  const TURN_API_URL = (import.meta.env.VITE_TURN_CREDENTIALS_URL || "").trim();
+  const TURN_API_KEY = (import.meta.env.VITE_TURN_API_KEY || "").trim();
+
+  const BASE_STUN_SERVERS = useMemo(
     () => [
-      {
-        urls: "stun:stun.relay.metered.ca:80",
-      },
+      { urls: "stun:stun.relay.metered.ca:80" },
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun.l.google.com:5349" },
+      { urls: "stun:stun1.l.google.com:3478" },
+      { urls: "stun:stun1.l.google.com:5349" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:5349" },
+      { urls: "stun:stun3.l.google.com:3478" },
+      { urls: "stun:stun3.l.google.com:5349" },
+      { urls: "stun:stun4.l.google.com:19302" },
+      { urls: "stun:stun4.l.google.com:5349" },
+    ],
+    []
+  );
+
+  const fallbackTurnServers = useMemo(() => {
+    if (!username || !credential) return [];
+    return [
       {
         urls: "turn:standard.relay.metered.ca:80",
-        username: username,
-        credential: credential,
+        username,
+        credential,
       },
       {
         urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-        username: username,
-        credential: credential,
+        username,
+        credential,
       },
       {
         urls: "turn:standard.relay.metered.ca:443",
-        username: username,
-        credential: credential,
+        username,
+        credential,
       },
       {
         urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-        username: username,
-        credential: credential,
+        username,
+        credential,
       },
-    ],
-    [credential, username]
+    ];
+  }, [credential, username]);
+
+  const turnServersRef = useRef(fallbackTurnServers);
+  const turnServersHashRef = useRef(JSON.stringify(fallbackTurnServers || []));
+  const [dynamicTurnServers, setDynamicTurnServers] =
+    useState(fallbackTurnServers);
+  const turnFetchInFlightRef = useRef(false);
+
+  const effectiveTurnServers = useMemo(
+    () =>
+      Array.isArray(dynamicTurnServers) && dynamicTurnServers.length
+        ? dynamicTurnServers
+        : fallbackTurnServers,
+    [dynamicTurnServers, fallbackTurnServers]
+  );
+
+  const ICE_SERVERS = useMemo(
+    () => [...BASE_STUN_SERVERS, ...(effectiveTurnServers || [])],
+    [BASE_STUN_SERVERS, effectiveTurnServers]
   );
 
   const TURN_ONLY_SERVERS = useMemo(
-    () => [
-      {
-        urls: "turn:standard.relay.metered.ca:80",
-        username: username,
-        credential: credential,
-      },
-      {
-        urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-        username: username,
-        credential: credential,
-      },
-      {
-        urls: "turn:standard.relay.metered.ca:443",
-        username: username,
-        credential: credential,
-      },
-      {
-        urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-        username: username,
-        credential: credential,
-      },
-    ],
-    [credential, username]
+    () =>
+      Array.isArray(effectiveTurnServers) && effectiveTurnServers.length
+        ? effectiveTurnServers
+        : fallbackTurnServers,
+    [effectiveTurnServers, fallbackTurnServers]
   );
 
   const [peerId, setPeerId] = useState(null);
@@ -190,6 +208,7 @@ export function PeerProvider({ children }) {
     typeof TextEncoder !== "undefined" ? new TextEncoder() : null
   );
   const mountedRef = useRef(true);
+  const scheduleConnectRef = useRef();
 
   const debugLogRef = useRef([]);
   const dlog = useCallback((...args) => {
@@ -212,6 +231,86 @@ export function PeerProvider({ children }) {
     [ICE_SERVERS, TURN_ONLY_SERVERS]
   );
 
+  const applyTurnServers = useCallback(
+    (servers) => {
+      if (!mountedRef.current) return false;
+      const sanitized = Array.isArray(servers)
+        ? servers
+            .map((server) => {
+              if (!server) return null;
+              const urls = server.urls;
+              if (!urls || (Array.isArray(urls) && urls.length === 0)) {
+                return null;
+              }
+              const entry = { urls };
+              if (server.username) entry.username = server.username;
+              if (server.credential || server.password)
+                entry.credential = server.credential || server.password;
+              if (server.ttl) entry.ttl = server.ttl;
+              return entry;
+            })
+            .filter(Boolean)
+        : [];
+
+      if (!sanitized.length) return false;
+
+      const serialized = JSON.stringify(sanitized);
+      if (serialized === turnServersHashRef.current) {
+        return false;
+      }
+
+      turnServersRef.current = sanitized;
+      turnServersHashRef.current = serialized;
+      setDynamicTurnServers(sanitized);
+      return true;
+    },
+    [setDynamicTurnServers]
+  );
+
+  const fetchTurnCredentials = useCallback(async () => {
+    if (!TURN_API_URL) return [];
+    if (typeof fetch !== "function") {
+      dlog("fetch TURN credentials no disponible en este entorno");
+      return [];
+    }
+    try {
+      const endpoint = new URL(TURN_API_URL);
+      if (TURN_API_KEY) {
+        if (!endpoint.searchParams.has("apiKey")) {
+          endpoint.searchParams.set("apiKey", TURN_API_KEY);
+        }
+      }
+      const response = await fetch(endpoint.toString(), {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const data = await response.json();
+      applyTurnServers(data);
+      return data;
+    } catch (error) {
+      dlog("fetch TURN credentials error", String(error));
+      return [];
+    }
+  }, [TURN_API_KEY, TURN_API_URL, applyTurnServers, dlog]);
+
+  const requestTurnCredentials = useCallback(() => {
+    if (!TURN_API_URL) return;
+    if (turnFetchInFlightRef.current) return;
+    turnFetchInFlightRef.current = true;
+    fetchTurnCredentials()
+      .catch(() => {
+        /* error already logged */
+      })
+      .finally(() => {
+        turnFetchInFlightRef.current = false;
+      });
+  }, [TURN_API_URL, fetchTurnCredentials]);
+
   const markRemoteForTurnOnly = useCallback(
     (remoteId, reason) => {
       if (connectionIceModeRef.current.get(remoteId) === "turn-only") {
@@ -219,10 +318,21 @@ export function PeerProvider({ children }) {
       }
       connectionIceModeRef.current.set(remoteId, "turn-only");
       dlog("Forzando TURN para peer", remoteId, reason);
+      requestTurnCredentials();
       return true;
     },
-    [dlog]
+    [dlog, requestTurnCredentials]
   );
+
+  const enqueueReconnect = useCallback((remoteId) => {
+    if (!remoteId) return;
+    if (!peersSetRef.current.has(remoteId)) return;
+    if (blockedPeersRef.current.has(remoteId)) return;
+    pendingConnectSetRef.current.add(remoteId);
+    if (isOnlineRef.current && scheduleConnectRef.current) {
+      scheduleConnectRef.current(remoteId);
+    }
+  }, []);
 
   const flushQueue = useCallback(
     (remoteId) => {
@@ -498,6 +608,10 @@ export function PeerProvider({ children }) {
     [dlog, sendEfficientData]
   );
 
+  useEffect(() => {
+    requestTurnCredentials();
+  }, [requestTurnCredentials]);
+
   const broadcastSync = useCallback(async () => {
     try {
       const me = authUserRef.current;
@@ -573,49 +687,55 @@ export function PeerProvider({ children }) {
     });
   }, [dlog, sendJSON]);
 
-  const cleanupConnection = useCallback((remoteId) => {
-    const conn = connectionsRef.current[remoteId];
-    if (!conn) return;
-    try {
-      conn.dc?.close?.();
-    } catch {}
-    try {
-      conn.pc?.close?.();
-    } catch {}
-    if (conn.pingTimer) clearInterval(conn.pingTimer);
-    if (conn.flushScheduled) {
-      clearTimeout(conn.flushScheduled);
-      conn.flushScheduled = null;
-    }
-    if (conn.dc && conn.bufferedLowHandler) {
+  const cleanupConnection = useCallback(
+    (remoteId, { requeue = true } = {}) => {
+      const conn = connectionsRef.current[remoteId];
+      if (!conn) return;
       try {
-        if (typeof conn.dc.removeEventListener === "function") {
-          conn.dc.removeEventListener(
-            "bufferedamountlow",
-            conn.bufferedLowHandler
-          );
-        } else if (conn.dc.onbufferedamountlow === conn.bufferedLowHandler) {
-          conn.dc.onbufferedamountlow = null;
-        }
+        conn.dc?.close?.();
       } catch {}
-    }
-    delete connectionsRef.current[remoteId];
-    setConnectedPeerIds((prev) => prev.filter((id) => id !== remoteId));
-    setPeerRTT((prev) => {
-      const { [remoteId]: _omit, ...rest } = prev;
-      return rest;
-    });
-    delete remoteInfoRef.current[remoteId];
-    delete accumulatingOrdersRef.current[`${remoteId}-1`];
-    delete accumulatingOrdersRef.current[`${remoteId}-2`];
-    // Clean up efficient chunks
-    Object.keys(accumulatingChunksRef.current).forEach((key) => {
-      if (key.startsWith(`${remoteId}-`)) {
-        delete accumulatingChunksRef.current[key];
+      try {
+        conn.pc?.close?.();
+      } catch {}
+      if (conn.pingTimer) clearInterval(conn.pingTimer);
+      if (conn.flushScheduled) {
+        clearTimeout(conn.flushScheduled);
+        conn.flushScheduled = null;
       }
-    });
-    // Note: Don't remove from blockedPeersRef here to prevent immediate reconnection attempts
-  }, []);
+      if (conn.dc && conn.bufferedLowHandler) {
+        try {
+          if (typeof conn.dc.removeEventListener === "function") {
+            conn.dc.removeEventListener(
+              "bufferedamountlow",
+              conn.bufferedLowHandler
+            );
+          } else if (conn.dc.onbufferedamountlow === conn.bufferedLowHandler) {
+            conn.dc.onbufferedamountlow = null;
+          }
+        } catch {}
+      }
+      delete connectionsRef.current[remoteId];
+      setConnectedPeerIds((prev) => prev.filter((id) => id !== remoteId));
+      setPeerRTT((prev) => {
+        const { [remoteId]: _omit, ...rest } = prev;
+        return rest;
+      });
+      delete remoteInfoRef.current[remoteId];
+      delete accumulatingOrdersRef.current[`${remoteId}-1`];
+      delete accumulatingOrdersRef.current[`${remoteId}-2`];
+      // Clean up efficient chunks
+      Object.keys(accumulatingChunksRef.current).forEach((key) => {
+        if (key.startsWith(`${remoteId}-`)) {
+          delete accumulatingChunksRef.current[key];
+        }
+      });
+      if (requeue) {
+        enqueueReconnect(remoteId);
+      }
+      // Note: Don't remove from blockedPeersRef here to prevent immediate reconnection attempts
+    },
+    [enqueueReconnect]
+  );
 
   const setupDataChannel = useCallback(
     (remoteId, dc) => {
@@ -691,9 +811,6 @@ export function PeerProvider({ children }) {
 
       dc.onclose = () => {
         cleanupConnection(remoteId);
-        if (peersSetRef.current.has(remoteId)) {
-          pendingConnectSetRef.current.add(remoteId);
-        }
       };
 
       dc.onmessage = (event) => {
@@ -732,7 +849,7 @@ export function PeerProvider({ children }) {
               );
               // Mark this peer as blocked to prevent reconnection attempts
               blockedPeersRef.current.add(remoteId);
-              cleanupConnection(remoteId);
+              cleanupConnection(remoteId, { requeue: false });
               return;
             }
 
@@ -1122,9 +1239,6 @@ export function PeerProvider({ children }) {
           pc.connectionState === "closed"
         ) {
           cleanupConnection(remoteId);
-          if (peersSetRef.current.has(remoteId)) {
-            pendingConnectSetRef.current.add(remoteId);
-          }
         }
       };
 
@@ -1149,9 +1263,6 @@ export function PeerProvider({ children }) {
           setTimeout(() => {
             if (pc.iceConnectionState === "disconnected") {
               cleanupConnection(remoteId);
-              if (peersSetRef.current.has(remoteId)) {
-                pendingConnectSetRef.current.add(remoteId);
-              }
             }
           }, 3000);
         }
@@ -1214,26 +1325,29 @@ export function PeerProvider({ children }) {
 
   const scheduleConnect = useCallback(
     (remoteId) => {
+      if (!remoteId) return;
       if (!isOnlineRef.current) {
-        pendingConnectSetRef.current.add(remoteId);
+        enqueueReconnect(remoteId);
         return;
       }
       if (connectTimersRef.current[remoteId]) return;
       if (connectionsRef.current[remoteId]) return;
 
-      // Don't schedule connection if peer is blocked
       if (blockedPeersRef.current.has(remoteId)) {
-        return; // Don't log here to avoid spam
+        return;
       }
 
+      pendingConnectSetRef.current.delete(remoteId);
       const delayMs = Math.floor(Math.random() * (BACKOFF_MAX + 1));
       connectTimersRef.current[remoteId] = setTimeout(() => {
         connectToPeerRef.current(remoteId);
         delete connectTimersRef.current[remoteId];
       }, delayMs);
     },
-    [BACKOFF_MAX] // Only depend on BACKOFF_MAX
+    [BACKOFF_MAX, enqueueReconnect]
   );
+
+  scheduleConnectRef.current = scheduleConnect;
 
   const setAuthUserStable = useCallback(
     (nextUser) => {
@@ -1343,7 +1457,9 @@ export function PeerProvider({ children }) {
     const handleOnline = () => {
       setIsOnline(true);
       Array.from(pendingConnectSetRef.current).forEach((remoteId) => {
-        scheduleConnect(remoteId);
+        if (!connectionsRef.current[remoteId]) {
+          scheduleConnect(remoteId);
+        }
       });
       pendingConnectSetRef.current.clear();
     };
