@@ -102,46 +102,60 @@ export function PeerProvider({ children }) {
 
   const username = import.meta.env.VITE_TURN_USERNAME;
   const credential = import.meta.env.VITE_TURN_CREDENTIAL;
-  const ICE_SERVERS = [
-    {
-      urls: "stun:stun.l.google.com:19302",
-    },
-    {
-      urls: "stun:stun1.l.google.com:19302",
-    },
-    {
-      urls: "stun:stun2.l.google.com:19302",
-    },
-    {
-      urls: "stun:stun3.l.google.com:19302",
-    },
-    {
-      urls: "stun:stun4.l.google.com:19302",
-    },
-    {
-      urls: "stun:stun.relay.metered.ca:80",
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:80",
-      username: username,
-      credential: credential,
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-      username: username,
-      credential: credential,
-    },
-    {
-      urls: "turn:standard.relay.metered.ca:443",
-      username: username,
-      credential: credential,
-    },
-    {
-      urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-      username: username,
-      credential: credential,
-    },
-  ];
+  const ICE_SERVERS = useMemo(
+    () => [
+      {
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:standard.relay.metered.ca:80",
+        username: username,
+        credential: credential,
+      },
+      {
+        urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+        username: username,
+        credential: credential,
+      },
+      {
+        urls: "turn:standard.relay.metered.ca:443",
+        username: username,
+        credential: credential,
+      },
+      {
+        urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+        username: username,
+        credential: credential,
+      },
+    ],
+    [credential, username]
+  );
+
+  const TURN_ONLY_SERVERS = useMemo(
+    () => [
+      {
+        urls: "turn:standard.relay.metered.ca:80",
+        username: username,
+        credential: credential,
+      },
+      {
+        urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+        username: username,
+        credential: credential,
+      },
+      {
+        urls: "turn:standard.relay.metered.ca:443",
+        username: username,
+        credential: credential,
+      },
+      {
+        urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+        username: username,
+        credential: credential,
+      },
+    ],
+    [credential, username]
+  );
 
   const [peerId, setPeerId] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -187,6 +201,28 @@ export function PeerProvider({ children }) {
     debugLogRef.current = [...debugLogRef.current.slice(-500), line];
     setDebugLog(debugLogRef.current);
   }, []);
+
+  const connectionIceModeRef = useRef(new Map());
+
+  const getIceServersForRemote = useCallback(
+    (remoteId) =>
+      connectionIceModeRef.current.get(remoteId) === "turn-only"
+        ? TURN_ONLY_SERVERS
+        : ICE_SERVERS,
+    [ICE_SERVERS, TURN_ONLY_SERVERS]
+  );
+
+  const markRemoteForTurnOnly = useCallback(
+    (remoteId, reason) => {
+      if (connectionIceModeRef.current.get(remoteId) === "turn-only") {
+        return false;
+      }
+      connectionIceModeRef.current.set(remoteId, "turn-only");
+      dlog("Forzando TURN para peer", remoteId, reason);
+      return true;
+    },
+    [dlog]
+  );
 
   const flushQueue = useCallback(
     (remoteId) => {
@@ -1041,7 +1077,8 @@ export function PeerProvider({ children }) {
     (remoteId) => {
       const previous = connectionsRef.current[remoteId];
       if (previous?.pc) return previous;
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const iceServers = getIceServersForRemote(remoteId);
+      const pc = new RTCPeerConnection({ iceServers });
       const conn = {
         pc,
         dc: previous?.dc ?? null,
@@ -1050,6 +1087,10 @@ export function PeerProvider({ children }) {
         queue: Array.isArray(previous?.queue) ? previous.queue : [],
         bufferedLowHandler: previous?.bufferedLowHandler ?? null,
         flushScheduled: previous?.flushScheduled ?? null,
+        iceMode:
+          connectionIceModeRef.current.get(remoteId) === "turn-only"
+            ? "turn-only"
+            : "default",
       };
       connectionsRef.current[remoteId] = conn;
 
@@ -1063,6 +1104,19 @@ export function PeerProvider({ children }) {
 
       pc.onconnectionstatechange = () => {
         dlog("pc state", remoteId, pc.connectionState);
+        if (pc.connectionState === "failed") {
+          const changed = markRemoteForTurnOnly(remoteId, "connection-state");
+          if (changed) {
+            const prevMode = conn.iceMode || "default";
+            conn.iceMode = "turn-only";
+            dlog(
+              "Reconectando peer con modo TURN",
+              remoteId,
+              prevMode,
+              "-> turn-only"
+            );
+          }
+        }
         if (
           pc.connectionState === "failed" ||
           pc.connectionState === "closed"
@@ -1075,6 +1129,22 @@ export function PeerProvider({ children }) {
       };
 
       pc.oniceconnectionstatechange = () => {
+        if (pc.iceConnectionState === "failed") {
+          const changed = markRemoteForTurnOnly(
+            remoteId,
+            "ice-connection-failed"
+          );
+          if (changed) {
+            const prevMode = conn.iceMode || "default";
+            conn.iceMode = "turn-only";
+            dlog(
+              "Fallo ICE, forzando TURN para peer",
+              remoteId,
+              prevMode,
+              "-> turn-only"
+            );
+          }
+        }
         if (pc.iceConnectionState === "disconnected") {
           setTimeout(() => {
             if (pc.iceConnectionState === "disconnected") {
@@ -1097,7 +1167,14 @@ export function PeerProvider({ children }) {
       setupDataChannel(remoteId, dc);
       return conn;
     },
-    [ICE_SERVERS, cleanupConnection, dlog, peerId, setupDataChannel]
+    [
+      cleanupConnection,
+      dlog,
+      getIceServersForRemote,
+      markRemoteForTurnOnly,
+      peerId,
+      setupDataChannel,
+    ]
   );
 
   const connectToPeer = useCallback(
