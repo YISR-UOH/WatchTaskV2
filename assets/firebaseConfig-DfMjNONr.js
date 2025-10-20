@@ -1,1 +1,0 @@
-import{n as e,t}from"./index-B7J4pF0o.js";export{t as FirebaseAPP,e as db};
