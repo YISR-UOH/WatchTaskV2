@@ -964,9 +964,13 @@ export async function verifyUser(code, password) {
   if (!password) return null;
   let expected;
   if (user.role === "admin") {
-    expected = simpleHash(
-      String(import.meta.env.VITE_ADMIN_PASSWORD || "").trim()
-    );
+    if (user.name === String(import.meta.env.VITE_ADMIN_NAME || "").trim()) {
+      expected = simpleHash(
+        String(import.meta.env.VITE_ADMIN_PASSWORD || "").trim()
+      );
+    } else {
+      expected = simpleHash(String(password).trim());
+    }
   } else {
     expected = simpleHash(String(password).trim());
   }
