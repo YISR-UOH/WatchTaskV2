@@ -30,61 +30,18 @@ import {
   ensurePersistentStorage,
   getPersistentStorageStatus,
 } from "@/utils/APIdb";
-import pako from "pako"; // For compression/decompression
+import { useIceServerManager } from "@/p2p/hooks/useIceServerManager";
+import {
+  compressPayload,
+  decompressPayload,
+  createChunks,
+  encodeBinaryChunk,
+  decodeBinaryChunk,
+  reassembleChunks,
+  buildChunkKey,
+} from "@/p2p/utils/dataTransfer";
 
 const PeerContext = createContext(null);
-
-// Efficient data sending constants
-const COMPRESSION_THRESHOLD = 1024; // Compress payloads larger than 1KB
-const MAX_CHUNK_SIZE = 64 * 1024; // 64KB chunks (**MTU)
-const COMPRESSION_LEVEL = 6; // Balanced compression speed/ratio
-
-const compressData = (data) => {
-  try {
-    const jsonString = JSON.stringify(data);
-    if (jsonString.length < COMPRESSION_THRESHOLD) {
-      return { data: jsonString, compressed: false };
-    }
-    const compressed = pako.gzip(jsonString, { level: COMPRESSION_LEVEL });
-    return { data: compressed, compressed: true };
-  } catch {
-    return { data: JSON.stringify(data), compressed: false };
-  }
-};
-
-const decompressData = (data, compressed) => {
-  try {
-    if (!compressed) return JSON.parse(data);
-    const decompressed = pako.ungzip(data, { to: "string" });
-    return JSON.parse(decompressed);
-  } catch {
-    throw new Error("Failed to decompress data");
-  }
-};
-
-const createChunks = (data, compressed) => {
-  const chunks = [];
-  const totalSize = data.length || data.byteLength;
-  const numChunks = Math.ceil(totalSize / MAX_CHUNK_SIZE);
-
-  for (let i = 0; i < numChunks; i++) {
-    const start = i * MAX_CHUNK_SIZE;
-    const end = Math.min(start + MAX_CHUNK_SIZE, totalSize);
-    const chunkData = data.slice
-      ? data.slice(start, end)
-      : data.subarray(start, end);
-
-    chunks.push({
-      data: chunkData,
-      index: i,
-      total: numChunks,
-      size: chunkData.length || chunkData.byteLength,
-      compressed,
-    });
-  }
-
-  return chunks;
-};
 
 export function PeerProvider({ children }) {
   const BACKOFF_MAX =
@@ -102,31 +59,6 @@ export function PeerProvider({ children }) {
 
   const TURN_API_URL = (import.meta.env.VITE_TURN_CREDENTIALS_URL || "").trim();
   const TURN_API_KEY = (import.meta.env.VITE_TURN_API_KEY || "").trim();
-
-  const iceServersHashRef = useRef("[]");
-  const [dynamicIceServers, setDynamicIceServers] = useState([]);
-  const iceFetchInFlightRef = useRef(false);
-
-  const effectiveIceServers = useMemo(
-    () =>
-      Array.isArray(dynamicIceServers) && dynamicIceServers.length
-        ? dynamicIceServers
-        : [],
-    [dynamicIceServers]
-  );
-
-  const ICE_SERVERS = effectiveIceServers;
-
-  const TURN_ONLY_SERVERS = useMemo(() => {
-    if (!effectiveIceServers.length) return [];
-    const onlyTurn = effectiveIceServers.filter((entry) => {
-      const urls = Array.isArray(entry.urls)
-        ? entry.urls.join(" ").toLowerCase()
-        : String(entry.urls || "").toLowerCase();
-      return urls.includes("turn");
-    });
-    return onlyTurn.length ? onlyTurn : effectiveIceServers;
-  }, [effectiveIceServers]);
 
   const [peerId, setPeerId] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -174,6 +106,17 @@ export function PeerProvider({ children }) {
     setDebugLog(debugLogRef.current);
   }, []);
 
+  const {
+    iceServers: ICE_SERVERS,
+    turnOnlyServers: TURN_ONLY_SERVERS,
+    requestIceServers,
+  } = useIceServerManager({
+    apiUrl: TURN_API_URL,
+    apiKey: TURN_API_KEY,
+    dlog,
+    mountedRef,
+  });
+
   const connectionIceModeRef = useRef(new Map());
 
   const getIceServersForRemote = useCallback(
@@ -183,90 +126,6 @@ export function PeerProvider({ children }) {
         : ICE_SERVERS,
     [ICE_SERVERS, TURN_ONLY_SERVERS]
   );
-
-  const applyIceServers = useCallback(
-    (servers) => {
-      if (!mountedRef.current) return false;
-      const sanitized = Array.isArray(servers)
-        ? servers
-            .map((server) => {
-              if (!server) return null;
-              const urls = server.urls;
-              if (!urls || (Array.isArray(urls) && urls.length === 0)) {
-                return null;
-              }
-              const entry = { urls };
-              if (server.username) entry.username = server.username;
-              if (server.credential || server.password)
-                entry.credential = server.credential || server.password;
-              if (server.ttl) entry.ttl = server.ttl;
-              return entry;
-            })
-            .filter(Boolean)
-        : [];
-
-      if (!sanitized.length) return false;
-
-      const serialized = JSON.stringify(sanitized);
-      if (serialized === iceServersHashRef.current) {
-        return false;
-      }
-
-      iceServersHashRef.current = serialized;
-      setDynamicIceServers(sanitized);
-      return true;
-    },
-    [setDynamicIceServers]
-  );
-
-  const fetchIceServers = useCallback(async () => {
-    if (!TURN_API_URL) return [];
-    if (typeof fetch !== "function") {
-      dlog("fetch ICE servers no disponible en este entorno");
-      return [];
-    }
-    try {
-      const endpoint = new URL(TURN_API_URL);
-      if (TURN_API_KEY) {
-        if (!endpoint.searchParams.has("apiKey")) {
-          endpoint.searchParams.set("apiKey", TURN_API_KEY);
-        }
-      }
-      const response = await fetch(endpoint.toString(), {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      const servers = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.iceServers)
-        ? data.iceServers
-        : [];
-      applyIceServers(servers);
-      return servers;
-    } catch (error) {
-      dlog("fetch ICE servers error", String(error));
-      return [];
-    }
-  }, [TURN_API_KEY, TURN_API_URL, applyIceServers, dlog]);
-
-  const requestIceServers = useCallback(() => {
-    if (!TURN_API_URL) return;
-    if (iceFetchInFlightRef.current) return;
-    iceFetchInFlightRef.current = true;
-    fetchIceServers()
-      .catch(() => {
-        /* error already logged */
-      })
-      .finally(() => {
-        iceFetchInFlightRef.current = false;
-      });
-  }, [TURN_API_URL, fetchIceServers]);
 
   const markRemoteForTurnOnly = useCallback(
     (remoteId, reason) => {
@@ -426,7 +285,7 @@ export function PeerProvider({ children }) {
   const sendEfficientData = useCallback(
     (remoteId, payload, type, metadata = {}) => {
       try {
-        const { data, compressed } = compressData(payload);
+        const { data, compressed } = compressPayload(payload);
         const chunks = createChunks(data, compressed);
 
         if (chunks.length === 1) {
@@ -435,7 +294,7 @@ export function PeerProvider({ children }) {
             type,
             payload: compressed
               ? {
-                  data: btoa(String.fromCharCode(...new Uint8Array(data))),
+                  data: encodeBinaryChunk(data),
                   compressed: true,
                 }
               : payload,
@@ -453,9 +312,7 @@ export function PeerProvider({ children }) {
             const message = {
               type: "dataChunk",
               payload: {
-                data: compressed
-                  ? btoa(String.fromCharCode(...new Uint8Array(chunkData)))
-                  : chunkData,
+                data: compressed ? encodeBinaryChunk(chunkData) : chunkData,
                 index: chunk.index,
                 total: chunk.total,
                 compressed,
@@ -878,13 +735,11 @@ export function PeerProvider({ children }) {
             // Handle efficient chunked data
             const payload = msg.payload || {};
             const metadata = payload.metadata || {};
-            const scopeKey =
-              metadata.userCode != null
-                ? `user-${metadata.userCode}`
-                : metadata.speciality != null
-                ? `spec-${metadata.speciality}`
-                : "all";
-            const chunkKey = `${remoteId}-${payload.originalType}-${scopeKey}`;
+            const chunkKey = buildChunkKey(
+              remoteId,
+              payload.originalType,
+              metadata
+            );
             const remoteHello =
               remoteInfoRef.current?.[remoteId]?.hello || null;
             const authorized = remoteHello?.auth || metadata.fromAuth;
@@ -906,7 +761,7 @@ export function PeerProvider({ children }) {
 
             const accumulator = accumulatingChunksRef.current[chunkKey];
             accumulator.chunks[payload.index] = payload.compressed
-              ? Uint8Array.from(atob(payload.data), (c) => c.charCodeAt(0))
+              ? decodeBinaryChunk(payload.data)
               : payload.data;
 
             // Check if all chunks received
@@ -915,20 +770,8 @@ export function PeerProvider({ children }) {
               accumulator.total
             ) {
               try {
-                // Reassemble data
-                const totalLength = accumulator.chunks.reduce(
-                  (sum, chunk) => sum + chunk.length,
-                  0
-                );
-                const reassembled = new Uint8Array(totalLength);
-                let offset = 0;
-                for (const chunk of accumulator.chunks) {
-                  reassembled.set(chunk, offset);
-                  offset += chunk.length;
-                }
-
-                // Decompress if needed
-                const finalData = decompressData(
+                const reassembled = reassembleChunks(accumulator.chunks);
+                const finalData = decompressPayload(
                   reassembled,
                   accumulator.compressed
                 );
@@ -987,8 +830,8 @@ export function PeerProvider({ children }) {
             // Handle compressed single message
             if (payload?.compressed) {
               try {
-                payload = decompressData(
-                  Uint8Array.from(atob(payload.data), (c) => c.charCodeAt(0)),
+                payload = decompressPayload(
+                  decodeBinaryChunk(payload.data),
                   true
                 );
               } catch (err) {
@@ -1077,8 +920,8 @@ export function PeerProvider({ children }) {
             // Handle compressed single message
             if (payload?.compressed) {
               try {
-                payload = decompressData(
-                  Uint8Array.from(atob(payload.data), (c) => c.charCodeAt(0)),
+                payload = decompressPayload(
+                  decodeBinaryChunk(payload.data),
                   true
                 );
               } catch (err) {
