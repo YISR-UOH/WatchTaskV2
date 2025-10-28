@@ -12,9 +12,6 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      workbox: {
-        maximumFileSizeToCacheInBytes: 8 * 1024 ** 2,
-      },
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
@@ -71,6 +68,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
         cleanupOutdatedCaches: true,
         navigateFallback: "/WatchTaskV2/index.html",
+        maximumFileSizeToCacheInBytes: 10 * 1024 ** 2,
         runtimeCaching: [
           {
             urlPattern: /\/WatchTaskV2\/.*\.(?:json|png|jpg|jpeg|svg)$/i,
