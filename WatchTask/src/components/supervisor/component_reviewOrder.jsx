@@ -1,13 +1,3 @@
-/**
- * Vista para la revisión de órdenes por parte del supervisor.
- * solo se revisan las ordenes finalizadas y con checklist completo.
- * solo se muestran las ordenes asignadas por el supervisor.
- * se divide en dos secciones: ordenes pendientes de revisión y ordenes anuladas.
- * cada sección muestra una lista de ordenes con su estado y detalles básicos.
- * al seleccionar una orden, se muestra su información (descripcion, numero unidad, tareas, comentarios del mantenedor si existiran, etc) y checklist.
- * el supervisor revisa la orden y acepta la orden.
- */
-
 import React, {
   useCallback,
   useEffect,
@@ -529,6 +519,9 @@ export default function ReviewOrder() {
           </ul>
         )}
         <p className="mt-3 text-xs text-slate-500">
+          {
+            // TODO: implementar gestión de órdenes anuladas.
+          }
           Próximamente podrás gestionar las órdenes anuladas desde esta vista.
         </p>
       </section>
@@ -575,6 +568,9 @@ export default function ReviewOrder() {
           </ul>
         )}
         <p className="mt-3 text-xs text-slate-500">
+          {
+            // TODO: implementar reprogramación y reasignación de órdenes vencidas.
+          }
           Estas órdenes expiraron sin aprobación. Podrás reprogramarlas o
           reasignarlas en próximas iteraciones.
         </p>

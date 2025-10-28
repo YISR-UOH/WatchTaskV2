@@ -134,15 +134,15 @@ export default function OrderCompletionChecklist({
   order,
   task,
   taskIndex,
-  user: propUser, // Renombrar para evitar conflicto
+  user: propUser,
   initialData,
   onCancel,
   onSubmit,
   saving = false,
   submitError = null,
 }) {
-  const { user: currentUser } = useAuth(); // Usuario actual del contexto
-  const user = propUser || currentUser; // Usar prop si existe, sino el actual
+  const { user: currentUser } = useAuth();
+  const user = propUser || currentUser;
 
   const createInitialState = useCallback(
     () =>
@@ -162,7 +162,6 @@ export default function OrderCompletionChecklist({
     setChecklist(createInitialState());
   }, [createInitialState]);
 
-  // Autocompletar sección supervisor si el usuario es supervisor y está vacía
   useEffect(() => {
     if (user?.role === "supervisor" && checklist.supervisor) {
       const needsAutoFill =

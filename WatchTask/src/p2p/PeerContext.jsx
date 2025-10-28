@@ -82,13 +82,13 @@ export function PeerProvider({ children }) {
   const politeRef = useRef({});
   const attemptCountsRef = useRef({});
   const selfDbRefRef = useRef(null);
-  const blockedPeersRef = useRef(new Set()); // New: track blocked peers to prevent reconnection attempts
+  const blockedPeersRef = useRef(new Set());
 
   const authUserRef = useRef(null);
   const pendingUsersRequestsRef = useRef(new Set());
   const remoteInfoRef = useRef({});
   const accumulatingOrdersRef = useRef({});
-  const accumulatingChunksRef = useRef({}); // New: for efficient chunked data
+  const accumulatingChunksRef = useRef({});
   const textEncoderRef = useRef(
     typeof TextEncoder !== "undefined" ? new TextEncoder() : null
   );
@@ -280,8 +280,6 @@ export function PeerProvider({ children }) {
     },
     [DC_BUFFER_LOW, DC_BUFFER_MAX, dlog, flushQueue]
   );
-
-  // Efficient chunked sending with compression
   const sendEfficientData = useCallback(
     (remoteId, payload, type, metadata = {}) => {
       try {
@@ -289,7 +287,6 @@ export function PeerProvider({ children }) {
         const chunks = createChunks(data, compressed);
 
         if (chunks.length === 1) {
-          // Send as single message
           const message = {
             type,
             payload: compressed
@@ -302,7 +299,6 @@ export function PeerProvider({ children }) {
           };
           return sendJSON(remoteId, message);
         } else {
-          // Send as chunks
           let sentCount = 0;
           const sendNextChunk = () => {
             if (sentCount >= chunks.length) return;
@@ -463,6 +459,7 @@ export function PeerProvider({ children }) {
           localOrdersVersion > remoteOrdersVersion
         ) {
           if (remoteHello.user?.role === "mantenedor") {
+            // TODO: revisar envio de ordenes a mantenedores
             // Send only assigned orders to maintainers
             getOrdersSnapshotForUser(remoteHello.user.code)
               .then((ordersSnap) => {
@@ -490,7 +487,7 @@ export function PeerProvider({ children }) {
     } catch (err) {
       dlog("broadcastSync error", String(err));
     }
-  }, []); // Remove dependencies to prevent infinite re-renders
+  }, []);
 
   const requestUsersSnapshot = useCallback(() => {
     Object.keys(connectionsRef.current || {}).forEach((remoteId) => {
@@ -537,7 +534,6 @@ export function PeerProvider({ children }) {
       delete remoteInfoRef.current[remoteId];
       delete accumulatingOrdersRef.current[`${remoteId}-1`];
       delete accumulatingOrdersRef.current[`${remoteId}-2`];
-      // Clean up efficient chunks
       Object.keys(accumulatingChunksRef.current).forEach((key) => {
         if (key.startsWith(`${remoteId}-`)) {
           delete accumulatingChunksRef.current[key];
@@ -546,7 +542,6 @@ export function PeerProvider({ children }) {
       if (requeue) {
         enqueueReconnect(remoteId);
       }
-      // Note: Don't remove from blockedPeersRef here to prevent immediate reconnection attempts
     },
     [enqueueReconnect]
   );
@@ -1173,7 +1168,7 @@ export function PeerProvider({ children }) {
             prev.name === nextUser.name));
       if (same) return;
 
-      // Clear blocked peers when user changes (role change may allow new connections)
+      // TODO: cambiar guest por rol
       if (!same && prev?.role !== nextUser?.role) {
         dlog(
           "Usuario cambió de rol, limpiando peers bloqueados",
@@ -1202,7 +1197,6 @@ export function PeerProvider({ children }) {
         pending.forEach((remoteId) => {
           sendUsersSnapshotToPeer(remoteId).catch(() => {});
         });
-        // Removed broadcastSync to avoid automatic order sending
       }
     },
     [sendHelloToPeer, sendUsersSnapshotToPeer, dlog]

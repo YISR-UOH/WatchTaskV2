@@ -42,7 +42,6 @@ const TASK_STATUS_LABEL = {
   3: "Anulada",
 };
 
-// obs_anulada
 const ORDER_CANCELLED = {
   0: "NO MANTENCION",
   1: "FALTA REPUESTO",

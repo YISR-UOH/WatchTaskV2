@@ -77,7 +77,7 @@ export default function UserManager() {
   const orderedUsers = useMemo(() => {
     const getActiveRank = (user) => (user?.active === false ? 1 : 0);
     const getSpecialityRank = (user) => {
-      if (user?.role === "admin") return -1; // Admin sin especialidad van primero
+      if (user?.role === "admin") return -1;
       const specialityValue = Number.parseInt(user?.speciality, 10);
       return Number.isFinite(specialityValue)
         ? specialityValue
@@ -87,7 +87,7 @@ export default function UserManager() {
     const getRoleRank = (user) => {
       if (user?.role === "supervisor") return 0;
       if (user?.role === "mantenedor") return 1;
-      if (user?.role === "admin") return 2; // ya priorizado por especialidad, pero define orden interno
+      if (user?.role === "admin") return 2;
       return 99;
     };
 

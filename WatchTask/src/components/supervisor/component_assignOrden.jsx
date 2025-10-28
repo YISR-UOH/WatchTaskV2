@@ -44,7 +44,7 @@ const ORDER_CANCELLED = {
   1: "FALTA REPUESTO",
   2: "OTRO",
 };
-const N_viewOrders = 20; // numero de ordenes a mostrar
+const N_viewOrders = 20;
 
 export default function AssignOrden() {
   const { user } = useAuth();
@@ -243,11 +243,10 @@ export default function AssignOrden() {
       const priorityA = a?.info?.prioridad ?? 0;
       const priorityB = b?.info?.prioridad ?? 0;
       if (priorityA !== priorityB) {
-        return priorityA - priorityB; // Ordenar por prioridad descendente
+        return priorityA - priorityB;
       }
       const freqA = a?.info["Frec. Dias"] ?? 0;
       const freqB = b?.info["Frec. Dias"] ?? 0;
-      // Ordenar por frecuencia ascendente (menor frecuencia primero)
       return freqA - freqB;
     });
   };

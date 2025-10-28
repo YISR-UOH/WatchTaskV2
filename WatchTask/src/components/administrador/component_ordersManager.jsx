@@ -1,8 +1,3 @@
-/**
- * Muestra las ordenes asignadas agrupadas por mantenedor y las no asignadas por especialidad.
- * Las tarjetas de mantenedor destacan la cantidad por estado y listan las ordenes asociadas.
- */
-
 import React, {
   useCallback,
   useEffect,
@@ -334,10 +329,9 @@ export default function OrdersManager() {
         .filter((order) => {
           const info = order?.info || {};
           const assignedCode = info.asignado_a_code;
-          const isAssigned =
-            assignedCode !== undefined &&
-            assignedCode !== null &&
-            String(assignedCode).trim() !== "";
+          const assignedCodeStr =
+            assignedCode == null ? "" : String(assignedCode).trim();
+          const isAssigned = assignedCodeStr && assignedCodeStr !== "0";
           if (isAssigned) return false;
           if (Number(info.status) === 4) return false;
           return isOrderExpired(order);
@@ -437,7 +431,14 @@ export default function OrdersManager() {
 
     for (const order of filteredOrders) {
       const info = order?.info || {};
-      const assignedCode = Number(info.asignado_a_code);
+      const rawAssigned = info.asignado_a_code;
+      const assignedCodeStr =
+        rawAssigned == null ? "" : String(rawAssigned).trim();
+      if (!assignedCodeStr || assignedCodeStr === "0") {
+        continue;
+      }
+
+      const assignedCode = Number(assignedCodeStr);
       if (!Number.isFinite(assignedCode)) continue;
 
       if (!maintainerMap.has(assignedCode)) {
@@ -478,12 +479,10 @@ export default function OrdersManager() {
     const result = new Map();
     for (const order of filteredOrders) {
       const info = order?.info || {};
-      const assignedCode = info.asignado_a_code;
-      if (
-        assignedCode !== undefined &&
-        assignedCode !== null &&
-        String(assignedCode).trim() !== ""
-      ) {
+      const rawAssigned = info.asignado_a_code;
+      const assignedCodeStr =
+        rawAssigned == null ? "" : String(rawAssigned).trim();
+      if (assignedCodeStr && assignedCodeStr !== "0") {
         continue;
       }
       const specialityId = Number(info["Especialidad_id"]);
@@ -813,10 +812,6 @@ export default function OrdersManager() {
                       <h3 className="text-lg font-semibold text-slate-900">
                         {label}
                       </h3>
-                      <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Especialidad{" "}
-                        {specialityId === "otros" ? "N/D" : `#${specialityId}`}
-                      </p>
                     </div>
                     <button
                       type="button"

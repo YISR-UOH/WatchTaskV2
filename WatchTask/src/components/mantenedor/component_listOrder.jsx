@@ -154,9 +154,7 @@ export default function ListOrder({ orders }) {
             >
               VER ORDEN COMPLETA
             </button>
-            {
-              // boton para iniciar orden (redirige a /orden/:code muestra toda la info de la orden y permite iniciar tareas)
-            }
+
             <button
               className="m-0 px-2 py-2 bg-blue-600 text-white  hover:bg-blue-700 cursor-pointer rounded-tl-md rounded-br-md"
               onClick={() => selectProtocol(order.code)}

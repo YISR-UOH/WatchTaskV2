@@ -1,7 +1,7 @@
 {
   "name": "watchtask",
   "private": true,
-  "version": "0.0.5",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -11,35 +11,37 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.13",
+    "@react-pdf/renderer": "^4.3.1",
+    "@tailwindcss/vite": "^4.1.16",
     "autoprefixer": "^10.4.21",
-    "daisyui": "^5.1.26",
-    "dexie": "^4.2.0",
+    "daisyui": "^5.3.8",
+    "dexie": "^4.2.1",
     "dexie-react-hooks": "^4.2.0",
-    "firebase": "^12.3.0",
+    "firebase": "^12.4.0",
     "pako": "^2.1.0",
-    "pdfjs-dist": "^5.4.149",
+    "pdfjs-dist": "^5.4.296",
     "postcss": "^8.5.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router": "^7.9.1",
-    "tailwindcss": "^4.1.13",
+    "react-pdf-tailwind": "^3.0.0",
+    "react-router": "^7.9.4",
+    "tailwindcss": "^4.1.16",
     "webrtc-adapter": "^9.0.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
-    "@types/react": "^19.1.13",
-    "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.3",
-    "eslint": "^9.36.0",
-    "eslint-plugin-react-hooks": "^6.1.0",
-    "eslint-plugin-react-refresh": "^0.4.23",
+    "@eslint/js": "^9.38.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "eslint": "^9.38.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "eslint-plugin-react-refresh": "^0.4.24",
     "gh-pages": "^6.3.0",
     "globals": "^16.4.0",
-    "vite": "npm:rolldown-vite@7.1.12",
-    "vite-plugin-pwa": "^1.0.3"
+    "vite": "npm:rolldown-vite@7.1.19",
+    "vite-plugin-pwa": "^1.1.0"
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@7.1.12"
+    "vite": "npm:rolldown-vite@7.1.19"
   }
 }

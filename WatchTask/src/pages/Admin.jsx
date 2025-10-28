@@ -8,7 +8,7 @@ import { useAuth } from "@/Context/AuthContext";
 import UserManager from "@/components/administrador/component_userManager";
 import OrdersManager from "@/components/administrador/component_ordersManager";
 import { processAndStorePdf } from "@/utils/pdfUtils";
-
+import OrderPDF from "@/components/administrador/component_orderPDF";
 export default function Admin() {
   const { user } = useAuth();
   const [pdfCount, setPdfCount] = useState(null);
@@ -53,6 +53,11 @@ export default function Admin() {
         id: "ordersManager",
         label: "Revisar Ordenes",
         content: <OrdersManager />,
+      },
+      {
+        id: "ordersPDF",
+        label: "generar PDF",
+        content: <OrderPDF />,
       },
       {
         id: "dashboard",

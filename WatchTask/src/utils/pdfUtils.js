@@ -176,7 +176,8 @@ function extractTablaTareas(text) {
   let indice = 0;
   const regex =
     /^([A-ZÁÉÍÓÚÑa-z0-9]+)\s+(\S+)\s+(\d+)\s+(.*)\s+((?:\d+\.\d+|\.\d+))\s+(.+)/;
-  const regex2 = /^([A-ZÁÉÍÓÚÑa-z0-9]+)\s+([\d.]+)\s+(\d+)\s+(.+)/;
+  const regex2 =
+    /^([A-ZÁÉÍÓÚÑa-z0-9]+)\s+([\d.]+)\s+(\d+)\s+(.+)\s+(NORMAL \/ REALIZADO .+)/;
   let totalHsEstim = 0.0;
   for (let i = 17; i < lines.length; i++) {
     const line = lines[i];
@@ -212,7 +213,7 @@ function extractTablaTareas(text) {
           "Tarea Standard": match[3],
           Descripcion: match[4],
           "Hs Estim": 0.0,
-          "Valor esperado": match[4],
+          "Valor esperado": match[5],
           completed_by: null,
           date_completed: null,
           obs_assigned_by: null,
