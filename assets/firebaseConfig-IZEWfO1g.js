@@ -1,0 +1,1 @@
+import{n as e,t}from"./index-VMu80xHA.js";export{t as FirebaseAPP,e as db};
