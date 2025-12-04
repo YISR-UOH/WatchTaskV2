@@ -47,6 +47,8 @@ INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics-def/xetex.def
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics-def/xetex.def
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/graphics-def/xetex.def
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
+INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/geometry/geometry.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/geometry/geometry.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/generic/iftex/ifvtex.sty
@@ -127,8 +129,6 @@ INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/rerunfilecheck/rerunfilecheck.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/generic/uniquecounter/uniquecounter.sty
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
-INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/setspace/setspace.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/float/float.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/float/float.sty
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty

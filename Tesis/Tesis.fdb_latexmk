@@ -1,18 +1,18 @@
 # Fdb version 4
-["bibtex Tesis"] 1764812733.84556 "Tesis.aux" "Tesis.bbl" "Tesis" 1764812748.76046 0
+["bibtex Tesis"] 1764848940.871 "Tesis.aux" "Tesis.bbl" "Tesis" 1764848955.65978 0
   "./bibliografia.bib" 1764806502.43219 6178 4c94d70b035d5f626b18cefc40743403 ""
   "/usr/local/texlive/2025/texmf-dist/bibtex/bst/base/apalike.bst" 1292289607 24635 604dafcc79f521a11ea73e506e1fbd98 ""
-  "Tesis.aux" 1764812735.38408 11954 7b8b1c75b96b737e3158406983185b72 "xelatex"
+  "Tesis.aux" 1764848942.33842 11955 c71425f8e09b312345b2acff963f0cf0 "xelatex"
   (generated)
   "Tesis.bbl"
   "Tesis.blg"
   (rewritten before read)
-["xdvipdfmx"] 1764812735.71678 "Tesis.xdv" "Tesis.pdf" "Tesis" 1764812748.76171 0
-  "Tesis.xdv" 1764812735.38773 632688 f0e3083204d758e3972bb4ecdeaa4c07 "xelatex"
+["xdvipdfmx"] 1764848942.68603 "Tesis.xdv" "Tesis.pdf" "Tesis" 1764848955.66122 0
+  "Tesis.xdv" 1764848942.34249 637256 6eb8fd46cf4165b6c20e4a4d8f2e60c7 "xelatex"
   (generated)
   "Tesis.pdf"
   (rewritten before read)
-["xelatex"] 1764812733.99189 "Tesis.tex" "Tesis.xdv" "Tesis" 1764812748.76055 0
+["xelatex"] 1764848941.00519 "Tesis.tex" "Tesis.xdv" "Tesis" 1764848955.65987 0
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/adobe/zapfding/pzdr.tfm" 1136768653 1528 f853c4d1b4e0550255e02831fdc8496f ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
@@ -88,13 +88,13 @@
   "/usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf" 1749313668 42213 4e2ca030e8e2640502016e9e45868dcb ""
   "/usr/local/texlive/2025/texmf-var/web2c/xetex/xelatex.fmt" 1758735420 5911855 5da30ff8e2a517975f214b05f9e048b0 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "Tesis.aux" 1764812735.38408 11954 7b8b1c75b96b737e3158406983185b72 "xelatex"
-  "Tesis.bbl" 1764812733.98913 3120 d786e9483c339015fc9d3bf09de6e621 "bibtex Tesis"
-  "Tesis.lof" 1764812735.38737 2259 07c155467509ef507cfe8cbd674193de "xelatex"
-  "Tesis.lot" 1764812735.38741 1016 32dd4e4fb89943ea6acc0daa33a9cfcd "xelatex"
-  "Tesis.out" 1764812735.38694 5534 137e3e8947401fa55899da1394b13c18 "xelatex"
-  "Tesis.tex" 1764812729.61736 66375 b2fb234f088da89d5aaee3a28cb8de8d ""
-  "Tesis.toc" 1764812735.38732 2145 7a47f9f0847d60c81cf7db200aa39d5b "xelatex"
+  "Tesis.aux" 1764848942.33842 11955 c71425f8e09b312345b2acff963f0cf0 "xelatex"
+  "Tesis.bbl" 1764848941.00252 3120 d786e9483c339015fc9d3bf09de6e621 "bibtex Tesis"
+  "Tesis.lof" 1764848942.3421 2259 87fe5c75e06871c5b8d6c1836a178008 "xelatex"
+  "Tesis.lot" 1764848942.34214 1016 93ad2bdd5eb8c5547984fa93a7ac9edb "xelatex"
+  "Tesis.out" 1764848942.34157 5534 137e3e8947401fa55899da1394b13c18 "xelatex"
+  "Tesis.tex" 1764848935.36633 66478 eb08382152a42cbc2d5310e33f1ccedc ""
+  "Tesis.toc" 1764848942.34204 2146 a5508ae96b64eed1a3cd2a3cf6c01806 "xelatex"
   "data/Debug_Panel.png" 1760112200.54021 340605 7ba811be72f7ffe76d9283d36c25dad0 ""
   "data/Mantenedor_Checklist.png" 1760111775.48834 336129 490d5f9731c004808361cb768c2c0a66 ""
   "data/Mantenedor_HOME_anexo.png" 1762738837.23874 273668 b4ae43e6ca9150cf74568fce58e08472 ""
