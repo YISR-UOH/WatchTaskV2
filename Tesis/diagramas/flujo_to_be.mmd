@@ -1,0 +1,52 @@
+%%{init: {
+  'theme': 'neutral',
+  'themeVariables': {
+    'fontSize': '24px',
+    'primaryColor': '#e3f2fd',
+    'primaryBorderColor': '#1565c0',
+    'primaryTextColor': '#0d47a1'
+  },
+  'flowchart': {
+    'curve': 'linear',
+    'nodeSpacing': 90,
+    'rankSpacing': 100,
+    'htmlLabels': true
+  }
+} }%%
+flowchart LR
+  %% Fase 1: Captura y Asignación
+  subgraph F1[Captura y Asignación]
+    A1["<div style='width:300px; white-space:normal'>1. Carga pautas PDF</div>"] --> A2["<div style='width:300px; white-space:normal'>2. Extracción y estructuración</div>"] --> A3["<div style='width:300px; white-space:normal'>3. Asignación auto supervisores</div>"] --> A4["<div style='width:300px; white-space:normal'>4. Asignación a mantenedores</div>"]
+  end
+
+  %% Fase 2: Ejecución en campo
+  subgraph F2[Ejecución en Campo]
+    B1["<div style='width:300px; white-space:normal'>5. Orden en dispositivos</div>"] --> B2["<div style='width:300px; white-space:normal'>6. Tareas + evidencias</div>"]
+  end
+
+  %% Fase 3: Sincronización y Consistencia
+  B2 --> D1{"¿Conectividad?"}
+  D1 -- Sí --> C1["<div style='width:300px; white-space:normal'>7. WebRTC inmediata</div>"]
+  D1 -- No --> S1["<div style='width:300px; white-space:normal'>Almacenamiento local + cola</div>"] --> R1["<div style='width:300px; white-space:normal'>Reintentos + detección peers</div>"] --> C1
+  C1 --> V1["<div style='width:300px; white-space:normal'>8. Versión distribuida</div>"]
+
+  %% Fase 4: Cierre y Reportes
+  V1 --> E1["<div style='width:300px; white-space:normal'>9. Checklist + firmas</div>"] --> E2["<div style='width:300px; white-space:normal'>10. Consolidación supervisor</div>"] --> E3["<div style='width:300px; white-space:normal'>11. Exportación PDF evidencias</div>"] --> E4["<div style='width:300px; white-space:normal'>12. Registro JD Edwards</div>"]
+  V1 --> M1["<div style='width:300px; white-space:normal'>Métricas + trazabilidad</div>"]
+
+  %% Estilos y leyenda
+  classDef action fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+  classDef decision fill:#fff3e0,stroke:#ef6c00,color:#e65100,stroke-width:2px;
+  classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+  linkStyle default stroke-width:3px;
+
+  class A1,A2,A3,A4,B1,B2,C1,V1,E1,E2,E3,E4,M1 action;
+  class D1 decision;
+  class S1,R1 store;
+
+  %% Leyenda (no afecta el flujo)
+  subgraph Legend[Leyenda]
+    L1[Acción]:::action
+    L2[Decisión]:::decision
+    L3[Offline / Persistencia]:::store
+  end

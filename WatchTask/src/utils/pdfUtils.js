@@ -398,7 +398,6 @@ async function saveToIndexedDB(jsonData, context = {}) {
 }
 
 // Helper: Procesar un archivo PDF y guardar el resultado en IndexedDB
-// Uso: await processAndStorePdf(file)
 async function processAndStorePdf(file, setNumOrders) {
   const textPages = await extractTextFromPdf(file);
   const ordenes = getData(textPages);

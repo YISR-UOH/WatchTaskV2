@@ -1,0 +1,61 @@
+
+
+%%{init: {
+  'theme': 'neutral',
+  'themeVariables': {
+    'fontSize': '28px',
+    'primaryColor': '#e3f2fd',
+    'primaryBorderColor': '#1565c0',
+    'primaryTextColor': '#0d47a1'
+  },
+  'flowchart': {
+    'curve': 'linear',
+    'nodeSpacing': 120,
+    'rankSpacing': 110,
+    'htmlLabels': true
+  }
+} }%%
+flowchart LR
+  subgraph Browser[Browser Cliente]
+    SPA[React SPA + UI] --> CTX[Contexts: Auth · Peer · Theme]
+    SPA --> SW[Service Worker]
+  end
+
+  CTX --> |CRUD · consultas| DB[(IndexedDB · Dexie)]
+  CTX --> |Parse pautas| PDF[PDF Parser: pdfjs-dist]
+  CTX --> |DataChannels| RTC[WebRTC Sync]
+  RTC --> |Signaling| FIRE[Firebase RTDB]
+  %% Usamos etiqueta corta para evitar problemas de parse
+  RTC --> |Relay TURN| TURN["TURN (METERED)"]
+  RTC --> Peers[Otros Peers]
+
+  CTX --> VER[Versionado y Conflictos]
+  CTX --> SEC[Seguridad · Roles · Auth]
+  CTX --> METR[Métricas y Logs]
+
+  SW --> CACHE[Caché de assets]
+  SW --> UPD[Actualización progresiva]
+
+  classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+  classDef service fill:#ede7f6,stroke:#5e35b1,color:#311b92;
+  classDef infra fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+  classDef logic fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+
+  DB:::store
+  PDF:::logic
+  RTC:::service
+  FIRE:::infra
+  TURN:::infra
+  SW:::service
+  VER:::logic
+  SEC:::logic
+  METR:::logic
+  CACHE:::store
+  UPD:::service
+
+  %% Leyenda
+  subgraph Legend[Leyenda]
+    L1[Almacenamiento]:::store
+    L2[Servicio · Infraestructura]:::service
+    L3[Lógica · Módulo]:::logic
+  end

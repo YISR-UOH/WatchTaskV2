@@ -320,7 +320,6 @@ export function PeerProvider({ children }) {
             const success = sendJSON(remoteId, message);
             if (success) {
               sentCount++;
-              // Schedule next chunk without artificial delay
               if (sentCount < chunks.length) {
                 setTimeout(sendNextChunk, 0);
               }

@@ -88,7 +88,7 @@ export default function AssignOrden() {
       setCurrentPage(0);
     } catch (err) {
       setError(
-        err?.message || "No se pudieron obtener las órdenes disponibles."
+        err?.message || "No se pudieron obtener las Ordenes disponibles."
       );
     } finally {
       setLoading(false);
@@ -402,7 +402,7 @@ export default function AssignOrden() {
 
         if (!updates.length) {
           throw new Error(
-            "No se encontraron órdenes seleccionadas para asignar."
+            "No se encontraron Ordenes seleccionadas para asignar."
           );
         }
 
@@ -435,7 +435,7 @@ export default function AssignOrden() {
         setActualOrder(null);
       } catch (err) {
         setAssignError(
-          err?.message || "No se pudo asignar las órdenes seleccionadas."
+          err?.message || "No se pudo asignar las Ordenes seleccionadas."
         );
       } finally {
         setAssigning(false);
@@ -473,7 +473,7 @@ export default function AssignOrden() {
       );
 
       if (!numericCodes.length) {
-        throw new Error("No hay órdenes seleccionadas para anular.");
+        throw new Error("No hay Ordenes seleccionadas para anular.");
       }
 
       const codesSet = new Set(numericCodes);
@@ -539,7 +539,7 @@ export default function AssignOrden() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[220px]">
               <label className="sr-only" htmlFor="assign-orders-search">
-                Buscar órdenes
+                Buscar Ordenes
               </label>
               <div className="relative">
                 <svg
@@ -605,10 +605,10 @@ export default function AssignOrden() {
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 className="text-lg font-semibold">
-                Asignar órdenes seleccionadas
+                Asignar Ordenes seleccionadas
               </h3>
               <p className="text-sm text-gray-600">
-                Selecciona un mantenedor y elige las órdenes para asignarlas de
+                Selecciona un mantenedor y elige las Ordenes para asignarlas de
                 manera masiva.
               </p>
             </div>
@@ -652,8 +652,8 @@ export default function AssignOrden() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-            <span>Órdenes disponibles: {filteredOrders.length}</span>
-            <span>Órdenes seleccionadas: {selectedOrders.length}</span>
+            <span>Ordenes disponibles: {filteredOrders.length}</span>
+            <span>Ordenes seleccionadas: {selectedOrders.length}</span>
             {selectedMaintainer ? (
               <span>
                 Mantenedor: #{selectedMaintainer.code} -{" "}
@@ -674,13 +674,19 @@ export default function AssignOrden() {
         </div>
       </div>
       <div>
-        <h2 className="text-2xl font-bold mb-4">Órdenes para Asignar:</h2>
+        <h2 className="text-2xl font-bold mb-4">Ordenes para Asignar:</h2>
         {paginatedOrders.length === 0 ? (
           <div>No hay ordenes que coincidan con los filtros aplicados.</div>
         ) : (
           paginatedOrders.map((order) => {
             const numericCode = Number(order.code);
             const isSelected = selectedOrders.includes(numericCode);
+            const dueDateDisplay = order?.info?.["Proximo Venc."] || "Sin fecha";
+            const rawFrequency = order?.info?.["Frec. Dias"];
+            const frequencyDisplay =
+              rawFrequency === undefined || rawFrequency === null || rawFrequency === ""
+                ? "No definido"
+                : `${rawFrequency} días`;
             return (
               <div
                 key={order.code}
@@ -737,6 +743,14 @@ export default function AssignOrden() {
                   <span className="mb-2 px-2 font-semibold text-lg text-gray-700">
                     Unidad: {order.info["N Unidad"]}
                   </span>
+                  <div className="mb-2 px-2 text-sm text-gray-600 space-y-1">
+                    <p>
+                      <span className="font-semibold">Vence:</span> {dueDateDisplay}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Frecuencia:</span> {frequencyDisplay}
+                    </p>
+                  </div>
                 </div>
                 <div className="relative flex justify-between items-center border-b border-gray-500 rounded-b-md">
                   <button
@@ -910,14 +924,14 @@ function CancelOrdersModal({ open, orderCodes, busy, onClose, onConfirm }) {
       onClose();
     } catch (err) {
       setError(
-        err?.message || "No se pudieron anular las órdenes seleccionadas."
+        err?.message || "No se pudieron anular las Ordenes seleccionadas."
       );
     }
   };
 
   const modalTitle =
     orderCodes.length > 1
-      ? `Anular ${orderCodes.length} órdenes`
+      ? `Anular ${orderCodes.length} Ordenes`
       : `Anular orden #${orderCodes[0]}`;
 
   return (
@@ -926,7 +940,7 @@ function CancelOrdersModal({ open, orderCodes, busy, onClose, onConfirm }) {
         <header className="border-b border-slate-200 px-4 py-3">
           <h2 className="text-lg font-semibold text-slate-900">{modalTitle}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Esta acción marcará las órdenes como anuladas con el motivo
+            Esta acción marcará las Ordenes como anuladas con el motivo
             seleccionado.
           </p>
         </header>
@@ -977,7 +991,7 @@ function CancelOrdersModal({ open, orderCodes, busy, onClose, onConfirm }) {
           ) : null}
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
             <span className="font-semibold text-slate-700">
-              Órdenes seleccionadas:
+              Ordenes seleccionadas:
             </span>
             <span className="ml-1 font-mono">
               {orderCodes.map((code) => `#${code}`).join(", ")}

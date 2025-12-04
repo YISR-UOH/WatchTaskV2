@@ -47,7 +47,7 @@ export default function Header() {
               <path d="M5 10v10h14V10" />
               <path d="M9 20v-6h6v6" />
             </svg>
-            <span className="leading-none">WatchTask</span>
+            <span className="leading-none">SIGEM</span>
           </button>
         </h1>
         <div className="flex items-center gap-2">

@@ -1,12 +1,33 @@
 \babel@toc {spanish}{}\relax 
-\contentsline {chapter}{Introducción}{1}{chapter*.4}%
-\contentsline {chapter}{Objetivos}{2}{chapter*.5}%
-\contentsline {section}{Objetivos General}{2}{section*.6}%
-\contentsline {section}{Objetivos Específico}{3}{section*.7}%
-\contentsline {chapter}{Hipótesis de Trabajo}{4}{chapter*.8}%
-\contentsline {chapter}{Alcance}{5}{chapter*.9}%
-\contentsline {chapter}{Marco Teórico}{6}{chapter*.10}%
-\contentsline {chapter}{Metodología de Investigación y Desarrollo}{12}{chapter*.32}%
-\contentsline {chapter}{Apéndice}{17}{appendix*.44}%
-\contentsline {chapter}{Glosario de Términos}{23}{appendix*.47}%
-\contentsline {chapter}{Bibliografia}{25}{appendix*.48}%
+\contentsline {chapter}{Introducción}{5}{chapter*.4}%
+\contentsline {chapter}{Objetivos}{6}{chapter*.5}%
+\contentsline {section}{Objetivos General}{6}{section*.6}%
+\contentsline {section}{Objetivo Específico}{7}{section*.6}%
+\contentsline {chapter}{Alcance}{8}{chapter*.7}%
+\contentsline {chapter}{Marco Teórico}{9}{chapter*.8}%
+\contentsline {chapter}{Metodología de Investigación y Desarrollo}{12}{chapter*.9}%
+\contentsline {section}{Tipo y enfoque de la investigación}{12}{section*.10}%
+\contentsline {section}{Proceso actual (AS-IS)}{12}{section*.10}%
+\contentsline {section}{Definición del Problema y Requerimientos}{14}{figure.0.1}%
+\contentsline {section}{Diseño de la solución (TO-BE)}{16}{table.0.1}%
+\contentsline {section}{Evaluación de usabilidad (piloto)}{20}{figure.0.4}%
+\contentsline {section}{Riesgos y mitigación}{20}{figure.0.4}%
+\contentsline {section}{Resumen metodológico}{20}{table.0.2}%
+\contentsline {chapter}{Resultados}{22}{chapter*.11}%
+\contentsline {section}{Resumen}{22}{section*.12}%
+\contentsline {section}{Indicadores cuantitativos}{22}{section*.12}%
+\contentsline {section}{Resultados por m\'odulo}{22}{table.0.4}%
+\contentsline {section}{Usabilidad (piloto)}{24}{table.0.4}%
+\contentsline {section}{Estabilidad y rendimiento}{24}{table.0.5}%
+\contentsline {section}{Comparativa AS-IS vs TO-BE}{25}{table.0.5}%
+\contentsline {section}{Comparativa con Soluciones de Mercado}{25}{table.0.6}%
+\contentsline {section}{Incidentes y resoluci\'on de conflictos}{26}{table.0.7}%
+\contentsline {section}{Limitaciones y amenazas a la validez}{26}{table.0.7}%
+\contentsline {section}{Estado de riesgos y mitigaci\'on}{26}{table.0.7}%
+\contentsline {section}{Lecciones aprendidas y pr\'oximos pasos}{26}{table.0.8}%
+\contentsline {chapter}{Conclusiones}{27}{chapter*.13}%
+\contentsline {chapter}{Apéndice}{29}{appendix*.14}%
+\contentsline {section}{Codigo fuente}{29}{section*.15}%
+\contentsline {section}{Implementación de Plataforma}{30}{section*.15}%
+\contentsline {chapter}{Glosario de Términos}{42}{appendix*.16}%
+\contentsline {chapter}{Bibliografia}{44}{appendix*.17}%

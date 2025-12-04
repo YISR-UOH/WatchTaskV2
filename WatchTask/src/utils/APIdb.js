@@ -4,7 +4,9 @@
  */
 import Dexie from "dexie";
 import {
+  CHILE_TIME_ZONE,
   addChileDays,
+  getTimeZoneOffsetMinutes,
   parseChileDateString,
   startOfChileDay,
 } from "@/utils/timezone";
@@ -77,13 +79,13 @@ export async function ensurePersistentStorage({ force = false } = {}) {
       };
       if (!granted) {
         console.warn(
-          "WatchTask: el navegador denegó la solicitud de almacenamiento persistente."
+          "SIGEM: el navegador denegó la solicitud de almacenamiento persistente."
         );
       }
       return persistentStorageStatus;
     } catch (error) {
       console.warn(
-        "WatchTask: no fue posible solicitar almacenamiento persistente.",
+        "SIGEM: no fue posible solicitar almacenamiento persistente.",
         error
       );
       persistentStorageStatus = {
@@ -104,42 +106,36 @@ export async function ensurePersistentStorage({ force = false } = {}) {
 
   return persistentStoragePromise;
 }
-
-// Singleton Dexie instance
 export const db = new Dexie("WatchTaskDB");
 
-// v1 and v2 existed previously with legacy stores. v3 consolidates to final spec
 db.version(3)
   .stores({
     users: "&code, name, role, speciality, active",
     usersMeta: "&version",
     orders: "&code",
     ordersMeta: "&version",
-    // drop legacy stores
     publicDB: null,
     publicDBMeta: null,
     publicUsersMeta: null,
     ordersByCode: null,
   })
   .upgrade(async (tx) => {
-    // Ensure meta tables have an initial record
     if ((await tx.table("usersMeta").count()) === 0) {
       await tx.table("usersMeta").put({
         version: 1,
-        changeLog: [`${new Date().toISOString()} - init users meta v1`],
+        changeLog: [`${nowISO()} - init users meta v1`],
       });
     }
     if ((await tx.table("ordersMeta").count()) === 0) {
       await tx.table("ordersMeta").put({
         version: 1,
-        changeLog: [`${new Date().toISOString()} - init orders meta v1`],
+        changeLog: [`${nowISO()} - init orders meta v1`],
       });
     }
-    // Migrate existing orders (from legacy 'orders' or 'ordersByCode') to be keyed by 'code'
     try {
       const dest = tx.table("orders");
       const srcByCode = tx.table("ordersByCode");
-      const srcLegacy = tx.table("orders"); // same name but previously &id; after schema bump, table persists
+      const srcLegacy = tx.table("orders");
       let migrated = 0;
       if (await srcByCode?.count?.()) {
         const rows = await srcByCode.toArray();
@@ -175,20 +171,102 @@ db.version(3)
         const nextVer = latest ? latest.version + 1 : 1;
         const changeLog = latest?.changeLog ? [...latest.changeLog] : [];
         changeLog.push(
-          `${new Date().toISOString()} - migrated orders to code PK (${migrated})`
+          `${nowISO()} - migrated orders to code PK (${migrated})`
         );
         await meta.put({ version: nextVer, changeLog });
       }
     } catch {}
   });
 
-// Types and helpers
 const toInt = (v) => {
   const n = parseInt(String(v).trim(), 10);
   return Number.isFinite(n) ? n : undefined;
 };
 
-const nowISO = () => new Date().toISOString();
+const padNumber = (value, size = 2) => String(value ?? "").padStart(size, "0");
+
+const sanitizeLegacyOffsetString = (value) => {
+  if (typeof value !== "string") return value;
+  if (!/[+-]\d{2}:[0-9]+\./.test(value)) return value;
+  return value.replace(
+    /([+-]\d{2}):([0-9]+)(\.[0-9]+)/g,
+    (_, hourPart, minutePart, fractional) => {
+      const minutesFloat = Number(`${minutePart}${fractional}`);
+      const normalizedMinutes = Number.isFinite(minutesFloat)
+        ? Math.max(0, Math.min(59, Math.trunc(minutesFloat)))
+        : Math.max(0, Math.min(59, Number.parseInt(minutePart, 10) || 0));
+      return `${hourPart}:${padNumber(normalizedMinutes, 2)}`;
+    }
+  );
+};
+
+const formatChileDateTimeISO = (value = new Date()) => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date?.getTime?.())) return "";
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: CHILE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  const map = {};
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      map[part.type] = part.value;
+    }
+  }
+  const rawOffsetMinutes = getTimeZoneOffsetMinutes(CHILE_TIME_ZONE, date) || 0;
+  const roundedOffsetMinutes = Number.isFinite(rawOffsetMinutes)
+    ? Math.round(rawOffsetMinutes)
+    : 0;
+  const sign = roundedOffsetMinutes >= 0 ? "+" : "-";
+  const absMinutes = Math.abs(roundedOffsetMinutes);
+  const offset = `${sign}${padNumber(Math.floor(absMinutes / 60), 2)}:${padNumber(
+    absMinutes % 60,
+    2
+  )}`;
+  const millis = padNumber(date.getMilliseconds(), 3);
+  return `${map.year || "0000"}-${map.month || "01"}-${
+    map.day || "01"
+  }T${map.hour || "00"}:${map.minute || "00"}:${map.second || "00"}.${millis}${offset}`;
+};
+
+const nowISO = () => formatChileDateTimeISO();
+
+const parseFlexibleDate = (value) => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const dateFromNumber = new Date(value);
+    if (!Number.isNaN(dateFromNumber.getTime())) return dateFromNumber;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed) {
+      const sanitized = sanitizeLegacyOffsetString(trimmed);
+      const attempts = [trimmed];
+      if (sanitized !== trimmed) attempts.push(sanitized);
+      for (const candidate of attempts) {
+        const parsed = new Date(candidate);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
+      }
+    }
+  }
+  const maybeDate = parseChileDateString(
+    typeof value === "string" ? sanitizeLegacyOffsetString(value) : value
+  );
+  if (maybeDate && !Number.isNaN(maybeDate.getTime())) return maybeDate;
+  return null;
+};
+
+const toISOOrNow = (value) => {
+  const parsed = parseFlexibleDate(value);
+  return parsed ? formatChileDateTimeISO(parsed) : nowISO();
+};
 
 async function sha256Hex(text) {
   const enc = new TextEncoder();
@@ -218,6 +296,15 @@ const calculateOrderStatus = (tasks) => {
   );
   if (hasInProgress) return 1;
   return 0;
+};
+
+const BACKUP_SIGNATURE = "WatchTaskBackup";
+const BACKUP_VERSION = 1;
+const BACKUP_SCOPES = new Set(["all", "users", "orders"]);
+const normalizeBackupScope = (scope) => {
+  const normalized = String(scope || "").toLowerCase();
+  if (BACKUP_SCOPES.has(normalized)) return normalized;
+  return "all";
 };
 
 const AUTO_EXPIRED_NOTE = "Anulada automaticamente por vencimiento";
@@ -280,12 +367,13 @@ export async function initAPIDB() {
       changeLog: [`${nowISO()} - init orders meta v1`],
     });
   }
+  try {
+    await markOrdersExpired(undefined, { skipInit: true });
+  } catch (error) {
+    console.warn("SIGEM: no fue posible validar expiración de ordenes", error);
+  }
   return db;
 }
-
-// --- Local change notifications (same-tab + cross-tab) ---
-// We notify on local mutations so the P2P layer can auto-broadcast users DB.
-// Important: DO NOT notify on applyUsersSnapshot to avoid feedback loops.
 const USERS_BC_NAME = "wt-users-changes";
 let usersBC = null;
 function getUsersBC() {
@@ -299,14 +387,12 @@ function getUsersBC() {
 
 function notifyUsersChanged(reason = "users-updated") {
   try {
-    // Same-tab listeners
     const evt = new CustomEvent("users:changed", {
       detail: { reason, ts: Date.now() },
     });
     window.dispatchEvent(evt);
   } catch {}
   try {
-    // Cross-tab listeners
     const bc = getUsersBC();
     bc?.postMessage?.({ type: "users:changed", reason, ts: Date.now() });
   } catch {}
@@ -326,14 +412,12 @@ function getOrdersBC() {
 
 function notifyOrdersChanged(reason = "orders-updated") {
   try {
-    // Same-tab listeners
     const evt = new CustomEvent("orders:changed", {
       detail: { reason, ts: Date.now() },
     });
     window.dispatchEvent(evt);
   } catch {}
   try {
-    // Cross-tab listeners
     const bc = getOrdersBC();
     bc?.postMessage?.({ type: "orders:changed", reason, ts: Date.now() });
   } catch {}
@@ -381,7 +465,6 @@ export async function seedRootAdminFromEnv() {
     role: "admin",
     speciality: null,
     active: true,
-    // For root admin we keep a simple password hash placeholder (not for production)
     passwordHash: simpleHash(password),
     createdAt: nowISO(),
   };
@@ -390,14 +473,12 @@ export async function seedRootAdminFromEnv() {
     await db.users.put(adminUser);
     await bumpUsersVersion("seed root admin from env");
   });
-  // Notify local changes so P2P can propagate users DB
   try {
     notifyUsersChanged("seed-root-admin");
   } catch {}
   return true;
 }
 
-// Extremely naive hash to avoid storing raw password in plain text locally.
 function simpleHash(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -647,8 +728,12 @@ export async function fetchOrdersByAssignedUser(userCode) {
     });
 }
 
-export async function markOrdersExpired(orderCodes) {
-  await initAPIDB();
+export async function markOrdersExpired(orderCodes, { skipInit = false } = {}) {
+  if (!skipInit) {
+    await initAPIDB();
+  } else if (!db.isOpen()) {
+    await db.open();
+  }
 
   const codesSet = new Set(
     Array.isArray(orderCodes)
@@ -657,6 +742,7 @@ export async function markOrdersExpired(orderCodes) {
           .filter((code) => Number.isFinite(code))
       : []
   );
+  const evaluateAll = codesSet.size === 0;
 
   const allOrders = await db.orders.toArray();
   if (!allOrders.length) return { expiredMarked: 0, restored: 0 };
@@ -673,7 +759,8 @@ export async function markOrdersExpired(orderCodes) {
     if (!Number.isFinite(code)) continue;
 
     const status = Number(order?.info?.status);
-    const shouldEvaluate = codesSet.has(code) || status === 4;
+    if (status === 2) continue; // completed orders stay untouched
+    const shouldEvaluate = evaluateAll || codesSet.has(code) || status === 4;
     if (!shouldEvaluate) continue;
 
     const expirationInfo = computeExpirationInfo(order?.info || null);
@@ -729,6 +816,179 @@ export async function markOrdersExpired(orderCodes) {
   } catch {}
 
   return { expiredMarked, restored };
+}
+
+export async function exportDatabaseBackup(scope = "all") {
+  const normalizedScope = normalizeBackupScope(scope);
+  await initAPIDB();
+
+  const includeUsers = normalizedScope === "all" || normalizedScope === "users";
+  const includeOrders = normalizedScope === "all" || normalizedScope === "orders";
+
+  const payload = {
+    type: BACKUP_SIGNATURE,
+    version: BACKUP_VERSION,
+    exportedAt: nowISO(),
+    scope: normalizedScope,
+    data: {},
+  };
+
+  if (includeUsers) {
+    payload.data.users = await db.users.orderBy("code").toArray();
+    payload.data.usersMeta = await db.usersMeta.orderBy("version").toArray();
+  }
+
+  if (includeOrders) {
+    payload.data.orders = await db.orders.toArray();
+    payload.data.ordersMeta = await db.ordersMeta.orderBy("version").toArray();
+  }
+
+  return payload;
+}
+
+const parseBackupPayload = (rawBackup) => {
+  if (!rawBackup) return null;
+  if (typeof rawBackup === "string") {
+    try {
+      return JSON.parse(rawBackup);
+    } catch (error) {
+      throw new Error("El archivo de backup no es un JSON válido.");
+    }
+  }
+  if (typeof rawBackup === "object") return rawBackup;
+  return null;
+};
+
+const normalizeMetaEntries = (entries) =>
+  Array.isArray(entries)
+    ? entries
+        .map((meta) => {
+          const version = toInt(meta?.version);
+          if (!Number.isFinite(version)) return null;
+          return { ...meta, version };
+        })
+        .filter(Boolean)
+    : [];
+
+export async function importDatabaseBackup(rawBackup) {
+  await initAPIDB();
+  const backup = parseBackupPayload(rawBackup);
+  if (!backup || typeof backup !== "object") {
+    throw new Error("Backup inválido.");
+  }
+  if (backup.type !== BACKUP_SIGNATURE) {
+    throw new Error("El archivo seleccionado no corresponde a un backup del sistema.");
+  }
+  if (backup.version !== BACKUP_VERSION) {
+    throw new Error(
+      `Versión de backup incompatible (recibida ${backup.version}, esperada ${BACKUP_VERSION}).`
+    );
+  }
+
+  const data = backup.data;
+  if (!data || typeof data !== "object") {
+    throw new Error("El backup no contiene datos para restaurar.");
+  }
+
+  const normalizedScope = normalizeBackupScope(backup.scope);
+  const restoreUsers =
+    normalizedScope !== "orders" &&
+    (Array.isArray(data.users) || Array.isArray(data.usersMeta));
+  const restoreOrders =
+    normalizedScope !== "users" &&
+    (Array.isArray(data.orders) || Array.isArray(data.ordersMeta));
+
+  if (!restoreUsers && !restoreOrders) {
+    throw new Error("El backup no contiene información de usuarios u órdenes para restaurar.");
+  }
+
+  const normalizedUsers = restoreUsers
+    ? (Array.isArray(data.users) ? data.users : [])
+        .map((user) => {
+          const code = toInt(user?.code);
+          if (!Number.isFinite(code)) return null;
+          return { ...user, code };
+        })
+        .filter(Boolean)
+    : [];
+
+  const normalizedOrders = restoreOrders
+    ? (Array.isArray(data.orders) ? data.orders : [])
+        .map((order) => {
+          const code = toInt(order?.code);
+          if (!Number.isFinite(code)) return null;
+          return { ...order, code };
+        })
+        .filter(Boolean)
+    : [];
+
+  const usersMetaEntries = restoreUsers
+    ? normalizeMetaEntries(data.usersMeta)
+    : [];
+  const ordersMetaEntries = restoreOrders
+    ? normalizeMetaEntries(data.ordersMeta)
+    : [];
+
+  const tables = [];
+  if (restoreUsers) tables.push(db.users, db.usersMeta);
+  if (restoreOrders) tables.push(db.orders, db.ordersMeta);
+
+  await db.transaction("rw", tables, async () => {
+    if (restoreUsers) {
+      await db.users.clear();
+      if (normalizedUsers.length) {
+        await db.users.bulkPut(normalizedUsers);
+      }
+      await db.usersMeta.clear();
+      if (usersMetaEntries.length) {
+        await db.usersMeta.bulkPut(usersMetaEntries);
+      } else {
+        await db.usersMeta.put({
+          version: 1,
+          changeLog: [`${nowISO()} - users meta restaurada sin historial`],
+        });
+      }
+    }
+
+    if (restoreOrders) {
+      await db.orders.clear();
+      if (normalizedOrders.length) {
+        await db.orders.bulkPut(normalizedOrders);
+      }
+      await db.ordersMeta.clear();
+      if (ordersMetaEntries.length) {
+        await db.ordersMeta.bulkPut(ordersMetaEntries);
+      } else {
+        await db.ordersMeta.put({
+          version: 1,
+          changeLog: [`${nowISO()} - orders meta restaurada sin historial`],
+        });
+      }
+    }
+  });
+
+  if (restoreUsers) {
+    try {
+      notifyUsersChanged("backup-import-users");
+    } catch {}
+  }
+
+  if (restoreOrders) {
+    try {
+      notifyOrdersChanged("backup-import-orders");
+    } catch {}
+    try {
+      await markOrdersExpired(undefined, { skipInit: true });
+    } catch {}
+  }
+
+  return {
+    scope: normalizedScope,
+    restored: {
+      users: normalizedUsers.length,
+      orders: normalizedOrders.length,
+    },
+  };
 }
 
 export async function cancelOrder(orderCode, reason, detail) {
@@ -787,10 +1047,13 @@ export async function startOrderTask(orderCode, taskIndex) {
   if (!taskList || !taskList[idx]) throw new Error("task not found");
 
   const prevTask = taskList[idx];
-  const startAt = prevTask?.init_task || new Date().toISOString();
+  const startAt = prevTask?.init_task || nowISO();
   const nextTask = {
     ...prevTask,
-    init_task: startAt,
+    init_task: toISOOrNow(startAt),
+    accepted_at: prevTask?.accepted_at
+      ? toISOOrNow(prevTask.accepted_at)
+      : toISOOrNow(startAt),
     status:
       typeof prevTask?.status === "number" && prevTask.status > 0
         ? prevTask.status
@@ -812,6 +1075,9 @@ export async function startOrderTask(orderCode, taskIndex) {
   updatedOrder.info = {
     ...(updatedOrder.info || {}),
     status: calculateOrderStatus(updatedTasks),
+    fecha_inicio: order.info?.fecha_inicio
+      ? toISOOrNow(order.info.fecha_inicio)
+      : nextTask.init_task,
   };
 
   await db.transaction("rw", db.orders, db.ordersMeta, async () => {
@@ -844,12 +1110,25 @@ export async function completeOrderTask(orderCode, taskIndex, updates = {}) {
   if (!taskList || !taskList[idx]) throw new Error("task not found");
 
   const prevTask = taskList[idx];
-  const timestamp = new Date().toISOString();
+  const timestamp = nowISO();
 
   const nextTask = {
     ...prevTask,
     status: 2,
-    completed_at: prevTask?.completed_at ?? timestamp,
+    end_task: timestamp,
+    
+    completed_by: updates.completed_by ?? prevTask?.completed_by ?? order?.info?.asignado_a_code ?? null,
+    completed_at: timestamp,
+    // calcular duration_seconds
+    duration_seconds: (() => {
+      const start =
+        parseFlexibleDate(prevTask?.init_task) ||
+        parseFlexibleDate(order.info?.fecha_inicio) ||
+        new Date(timestamp);
+      const end = parseFlexibleDate(timestamp) || new Date();
+      const diffMs = end.getTime() - start.getTime();
+      return Math.max(0, Math.floor(diffMs / 1000));
+    })(),
     accepted_protocol: updates.accepted ?? true,
     accepted_at: prevTask?.accepted_at ?? timestamp,
   };
@@ -890,6 +1169,28 @@ export async function completeOrderTask(orderCode, taskIndex, updates = {}) {
   updatedOrder.info = {
     ...(updatedOrder.info || {}),
     status: calculateOrderStatus(updatedTasks),
+    fecha_fin: timestamp,
+    // TODO: hs_reales = delta entre fecha_inicio y fecha_fin en horas
+    hs_reales: (() => {
+      const startCandidates = [
+        updatedOrder.info?.fecha_inicio,
+        order.info?.fecha_inicio,
+        prevTask?.init_task,
+        order.tasks?.data?.find((task) => task?.init_task)?.init_task,
+      ];
+      const endCandidates = [timestamp, order.info?.fecha_fin];
+
+      const startDate = startCandidates
+        .map((candidate) => parseFlexibleDate(candidate))
+        .find((parsed) => parsed);
+      const endDate = endCandidates
+        .map((candidate) => parseFlexibleDate(candidate))
+        .find((parsed) => parsed);
+      if (!startDate || !endDate) return 0;
+      const diffMs = endDate.getTime() - startDate.getTime();
+      if (!Number.isFinite(diffMs) || diffMs <= 0) return 0;
+      return Number((diffMs / (1000 * 60 * 60)).toFixed(2));
+    })(),
   };
 
   await db.transaction("rw", db.orders, db.ordersMeta, async () => {
@@ -1011,13 +1312,11 @@ export async function applyUsersSnapshot({ meta, users, sig }) {
   const localMeta = await getUsersMeta();
   const localVer = localMeta?.version || 0;
   const incomingVer = meta?.version || 0;
-  // Compute and log signature check (best-effort)
   try {
     const calc = await sha256Hex(
       canonicalizeUsersForSignature(users || []) + `#v${incomingVer}`
     );
     if (sig && calc !== sig) {
-      // signature mismatch - we still can choose to reject; for now, log only
       console.warn("Users snapshot signature mismatch");
     }
   } catch {}
@@ -1038,7 +1337,6 @@ export async function applyUsersSnapshot({ meta, users, sig }) {
       changeLog: meta?.changeLog || [],
     });
   });
-  // Do not call notifyUsersChanged here to prevent echo/broadcast loops.
   try {
     notifyUsersChanged("snapshot-applied");
   } catch {}
@@ -1129,7 +1427,7 @@ export async function applyOrdersSnapshot({ meta, orders }, context = {}) {
       }
     };
 
-    await scopedRemoval(); // Remove stale assignments for scoped snapshots
+    await scopedRemoval();
 
     if (normalized.length) {
       await db.orders.bulkPut(normalized);

@@ -10,7 +10,7 @@
  *  -firma digitalizada (digitalizar la firma y guardarla como svg)
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { unstable_Activity, Activity as ActivityStable } from "react";
 import { addUser, listUsers, updateUser } from "@/utils/APIdb";
 let Activity = ActivityStable ?? unstable_Activity;
@@ -23,6 +23,7 @@ function createEmptyUserForm() {
     role: "",
     speciality: "",
     password: "",
+    signature: EMPTY_SIGNATURE,
   };
 }
 
@@ -388,6 +389,7 @@ function UserModal({ visible, mode, user, onClose, onSuccess }) {
         role: user?.role ?? "",
         speciality: hasSpeciality ? String(specialityRaw) : "",
         password: "",
+        signature: user?.signature ?? EMPTY_SIGNATURE,
       };
     }
     return createEmptyUserForm();
@@ -396,12 +398,14 @@ function UserModal({ visible, mode, user, onClose, onSuccess }) {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [signatureTouched, setSignatureTouched] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setForm(initialForm);
       setError(null);
       setBusy(false);
+      setSignatureTouched(false);
     }
   }, [initialForm, visible]);
 
@@ -423,6 +427,14 @@ function UserModal({ visible, mode, user, onClose, onSuccess }) {
                 : "",
           }
         : {}),
+    }));
+  };
+
+  const handleSignatureChange = (value) => {
+    setSignatureTouched(true);
+    setForm((prev) => ({
+      ...prev,
+      signature: value || EMPTY_SIGNATURE,
     }));
   };
 
@@ -477,6 +489,9 @@ function UserModal({ visible, mode, user, onClose, onSuccess }) {
         if (passwordValue) {
           patch.password = passwordValue;
         }
+        if (signatureTouched) {
+          patch.signature = form.signature ?? EMPTY_SIGNATURE;
+        }
         await updateUser(user.code, patch);
       } else {
         await addUser({
@@ -486,7 +501,7 @@ function UserModal({ visible, mode, user, onClose, onSuccess }) {
           speciality: specialityValue,
           active: true,
           password: passwordValue,
-          signature: EMPTY_SIGNATURE,
+          signature: form.signature ?? EMPTY_SIGNATURE,
         });
       }
       await onSuccess?.();
@@ -521,147 +536,295 @@ function UserModal({ visible, mode, user, onClose, onSuccess }) {
     : "Define una contraseña temporal";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl">
-        <header className="border-b border-slate-200 px-4 py-3">
-          <h2 className="text-lg font-semibold text-slate-900">{modalTitle}</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {isEdit
-              ? "Actualiza la información del usuario seleccionado."
-              : "Completa la información requerida para crear el nuevo usuario."}
-          </p>
-        </header>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 px-4 py-4">
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="user-code"
-              >
-                Código
-              </label>
-              <input
-                id="user-code"
-                type="number"
-                min="1"
-                className="input w-full"
-                value={form.code}
-                onChange={handleFieldChange("code")}
-                disabled={busy || isEdit}
-                required
-              />
-            </div>
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="user-name"
-              >
-                Nombre completo
-              </label>
-              <input
-                id="user-name"
-                type="text"
-                className="input w-full"
-                value={form.name}
-                onChange={handleFieldChange("name")}
-                disabled={busy}
-                required
-              />
-            </div>
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="user-role"
-              >
-                Rol
-              </label>
-              <select
-                id="user-role"
-                className="input w-full"
-                value={form.role}
-                onChange={handleFieldChange("role")}
-                disabled={busy}
-                required
-              >
-                <option value="">Seleccionar rol</option>
-                {Object.entries(ROLES).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="user-speciality"
-              >
-                Especialidad
-              </label>
-              <select
-                id="user-speciality"
-                className="input w-full"
-                value={form.speciality}
-                onChange={handleFieldChange("speciality")}
-                disabled={busy || !isSpecialityRequired}
-                required={isSpecialityRequired}
-              >
-                <option value="">
-                  {isSpecialityRequired
-                    ? "Seleccionar especialidad"
-                    : "Sin especialidad"}
-                </option>
-                {Object.entries(SPECIALTIES).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="user-password"
-              >
-                {passwordLabel}
-              </label>
-              <input
-                id="user-password"
-                type="password"
-                className="input w-full"
-                value={form.password}
-                onChange={handleFieldChange("password")}
-                disabled={busy}
-                placeholder={passwordPlaceholder}
-                {...(isEdit ? {} : { required: true })}
-              />
-            </div>
-            <div>
-              <span className="text-xs text-slate-500">
-                La firma digitalizada se podrá cargar más adelante. Se
-                inicializa como no disponible.
-              </span>
-            </div>
-            {error ? (
-              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-slate-900/40 px-4 py-6">
+      <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+        <div className="flex max-h-[calc(100vh-4rem)] flex-col overflow-y-auto">
+          <header className="border-b border-slate-200 px-4 py-3">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {modalTitle}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {isEdit
+                ? "Actualiza la información del usuario seleccionado."
+                : "Completa la información requerida para crear el nuevo usuario."}
+            </p>
+          </header>
+          <form onSubmit={handleSubmit} className="flex flex-1 flex-col">
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="user-code"
+                >
+                  Código
+                </label>
+                <input
+                  id="user-code"
+                  type="number"
+                  min="1"
+                  className="input w-full"
+                  value={form.code}
+                  onChange={handleFieldChange("code")}
+                  disabled={busy || isEdit}
+                  required
+                />
               </div>
-            ) : null}
-          </div>
-          <footer className="flex justify-end gap-3 border-t border-slate-200 px-4 py-3">
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={handleClose}
-              disabled={busy}
-            >
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={busy}>
-              {busy ? "Guardando..." : submitLabel}
-            </button>
-          </footer>
-        </form>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="user-name"
+                >
+                  Nombre completo
+                </label>
+                <input
+                  id="user-name"
+                  type="text"
+                  className="input w-full"
+                  value={form.name}
+                  onChange={handleFieldChange("name")}
+                  disabled={busy}
+                  required
+                />
+              </div>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="user-role"
+                >
+                  Rol
+                </label>
+                <select
+                  id="user-role"
+                  className="input w-full"
+                  value={form.role}
+                  onChange={handleFieldChange("role")}
+                  disabled={busy}
+                  required
+                >
+                  <option value="">Seleccionar rol</option>
+                  {Object.entries(ROLES).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="user-speciality"
+                >
+                  Especialidad
+                </label>
+                <select
+                  id="user-speciality"
+                  className="input w-full"
+                  value={form.speciality}
+                  onChange={handleFieldChange("speciality")}
+                  disabled={busy || !isSpecialityRequired}
+                  required={isSpecialityRequired}
+                >
+                  <option value="">
+                    {isSpecialityRequired
+                      ? "Seleccionar especialidad"
+                      : "Sin especialidad"}
+                  </option>
+                  {Object.entries(SPECIALTIES).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="user-password"
+                >
+                  {passwordLabel}
+                </label>
+                <input
+                  id="user-password"
+                  type="password"
+                  className="input w-full"
+                  value={form.password}
+                  onChange={handleFieldChange("password")}
+                  disabled={busy}
+                  placeholder={passwordPlaceholder}
+                  {...(isEdit ? {} : { required: true })}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Firma digital (opcional)
+                </label>
+                <SignaturePad
+                  value={form.signature}
+                  onChange={handleSignatureChange}
+                  disabled={busy}
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Dibuja la firma con el mouse o una pantalla táctil. Puedes
+                  borrar para volver a intentarlo.
+                </p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">
+                  La firma queda almacenada en la base local (IndexedDB) y se
+                  reutiliza al editar al usuario.
+                </span>
+              </div>
+              {error ? (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </div>
+              ) : null}
+            </div>
+            <footer className="flex justify-end gap-3 border-t border-slate-200 px-4 py-3">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={handleClose}
+                disabled={busy}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={busy}>
+                {busy ? "Guardando..." : submitLabel}
+              </button>
+            </footer>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignaturePad({ value, onChange, disabled = false }) {
+  const canvasRef = useRef(null);
+  const drawingRef = useRef(false);
+
+  const resetCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#0f172a";
+  }, []);
+
+  useEffect(() => {
+    resetCanvas();
+    if (!value) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      resetCanvas();
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = value;
+  }, [resetCanvas, value]);
+
+  const getPoint = (event) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    const ratioX = canvas.width / rect.width;
+    const ratioY = canvas.height / rect.height;
+    return {
+      x: (event.clientX - rect.left) * ratioX,
+      y: (event.clientY - rect.top) * ratioY,
+    };
+  };
+
+  const commitStroke = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !onChange) return;
+    onChange(canvas.toDataURL("image/png"));
+  };
+
+  const handlePointerDown = (event) => {
+    if (disabled) return;
+    event.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.setPointerCapture?.(event.pointerId);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const point = getPoint(event);
+    if (!point) return;
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+    drawingRef.current = true;
+  };
+
+  const handlePointerMove = (event) => {
+    if (disabled || !drawingRef.current) return;
+    event.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const point = getPoint(event);
+    if (!point) return;
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  };
+
+  const handlePointerUp = (event) => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    event.preventDefault();
+    commitStroke();
+    const canvas = canvasRef.current;
+    canvas?.releasePointerCapture?.(event.pointerId);
+  };
+
+  const handlePointerLeave = (event) => {
+    if (!drawingRef.current) return;
+    handlePointerUp(event);
+  };
+
+  const handleClear = () => {
+    if (disabled) return;
+    resetCanvas();
+    onChange?.(EMPTY_SIGNATURE);
+  };
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+      <canvas
+        ref={canvasRef}
+        width={640}
+        height={220}
+        className={`h-48 w-full touch-none rounded-md border border-dashed border-slate-300 bg-white ${
+          disabled ? "opacity-60" : "cursor-crosshair"
+        }`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+      />
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline"
+          onClick={handleClear}
+          disabled={disabled}
+        >
+          Borrar firma
+        </button>
       </div>
     </div>
   );

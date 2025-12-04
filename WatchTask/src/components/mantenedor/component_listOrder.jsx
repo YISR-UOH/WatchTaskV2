@@ -131,6 +131,9 @@ export default function ListOrder({ orders }) {
             <span className="mb-2 px-2 font-semibold text-lg text-gray-700">
               Unidad: {order.unidad}
             </span>
+            <span className="mb-2 px-2 font-semibold text-md text-gray-700">
+              <p>Frec. Dias: {order.info["Frec. Dias"]} | Proximo Venc.: {order.info["Proximo Venc."]}</p>
+            </span>
           </div>
           <div className="relative flex justify-between items-center border-b border-gray-500 rounded-b-md">
             <button

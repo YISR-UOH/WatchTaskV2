@@ -8,6 +8,7 @@ import { useAuth } from "@/Context/AuthContext";
 import AssignOrden from "@/components/supervisor/component_assignOrden";
 import ReviewOrder from "@/components/supervisor/component_reviewOrder";
 import ReassignOrder from "@/components/supervisor/component_reassignOrder";
+import Dashboard from "@/pages/Dashboard";
 export default function Supervisor() {
   const { user } = useAuth();
   const tabs = useMemo(
@@ -30,7 +31,7 @@ export default function Supervisor() {
       {
         id: "dashboard",
         label: "Dashboard",
-        content: <div>Dashboard en construcción</div>,
+        content: <Dashboard />,
       },
     ],
     []

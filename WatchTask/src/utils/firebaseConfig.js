@@ -1,7 +1,6 @@
 /**
  * @file firebaseConfig.js
  * @description Configuración e inicialización de Firebase.
- * @date 24-09-2025
  */
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";

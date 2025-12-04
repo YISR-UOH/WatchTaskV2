@@ -1,44 +1,77 @@
 \begin{thebibliography}{}
 
-\bibitem[ley, 1999]{ley19628}
- (1999).
-\newblock Ley n° 19.628 sobre protección de la vida privada.
-\newblock Diario Oficial de la República de Chile.
-\newblock Vigente con modificaciones.
+\bibitem[Alabbas and Bell, 2023]{IndexedDB_W3C}
+Alabbas, A. and Bell, J. (2023).
+\newblock Indexed database api 3.0.
+\newblock W3c recommendation, World Wide Web Consortium (W3C).
 
-\bibitem[iso, 2011]{iso25010:2011}
- (2011).
-\newblock Iso/iec 25010:2011 systems and software engineering — systems and software quality requirements and evaluation (square) — system and software quality models.
-\newblock Standard, International Organization for Standardization and International Electrotechnical Commission, Geneva, Switzerland.
+\bibitem[Alvestrand, 2021]{RFC8825}
+Alvestrand, Y. (2021).
+\newblock Overview: Real time protocols for browser-based applications.
+\newblock Technical Report 8825, RFC Editor.
 
-\bibitem[iso, 2014]{iso55000:2014}
- (2014).
-\newblock Iso 55000:2014 asset management — overview, principles and terminology.
-\newblock Standard, International Organization for Standardization, Geneva, Switzerland.
+\bibitem[Archibald and Kruisselbrink, 2022]{ServiceWorkers_W3C}
+Archibald, J. and Kruisselbrink, M. (2022).
+\newblock Service workers 1.
+\newblock W3c candidate recommendation, World Wide Web Consortium (W3C).
 
-\bibitem[iso, 2016]{iso14224:2016}
- (2016).
-\newblock Iso 14224:2016 petroleum, petrochemical and natural gas industries — collection and exchange of reliability and maintenance data for equipment.
-\newblock Standard, International Organization for Standardization, Geneva, Switzerland.
+\bibitem[Contributors, 2024]{MDN_PWA}
+Contributors, M. (2024).
+\newblock Progressive web apps (pwas).
+\newblock Mozilla Developer Network (MDN) Web Docs.
 
-\bibitem[iso, 2018]{iso45001:2018}
- (2018).
-\newblock Iso 45001:2018 occupational health and safety management systems — requirements with guidance for use.
-\newblock Standard, International Organization for Standardization, Geneva, Switzerland.
+\bibitem[Fahlander, 2024]{DexieJS}
+Fahlander, D. (2024).
+\newblock Dexie.js: A minimalistic wrapper for indexeddb.
 
-\bibitem[iso, 2022]{iso27001:2022}
- (2022).
-\newblock Iso/iec 27001:2022 information security, cybersecurity and privacy protection — information security management systems — requirements.
-\newblock Standard, International Organization for Standardization and International Electrotechnical Commission, Geneva, Switzerland.
+\bibitem[for Standardization, 2014]{ISO55000:2014}
+for Standardization, I.~O. (2014).
+\newblock Iso 55000:2014 asset management — overview, principles and
+  terminology.
+\newblock Standard, International Organization for Standardization, Geneva,
+  Switzerland.
 
-\bibitem[Hevner et~al., 2004]{hevner2004}
+\bibitem[for Standardization, 2016]{ISO14224:2016}
+for Standardization, I.~O. (2016).
+\newblock Iso 14224:2016 petroleum, petrochemical and natural gas industries
+  — collection and exchange of reliability and maintenance data for
+  equipment.
+\newblock Standard, International Organization for Standardization, Geneva,
+  Switzerland.
+
+\bibitem[Google, 2024]{FirebaseDocs}
+Google (2024).
+\newblock Firebase realtime database documentation.
+\newblock Google Developers.
+
+\bibitem[Hevner et~al., 2004]{Hevner2004}
 Hevner, A.~R., March, S.~T., Park, J., and Ram, S. (2004).
 \newblock Design science in information systems research.
 \newblock {\em MIS Quarterly}, 28(1):75--105.
 
-\bibitem[Peffers et~al., 2007]{peffers2007}
+\bibitem[International Organization~for Standardization, 2022]{ISO27001:2022}
+International Organization~for Standardization, I. E.~C. (2022).
+\newblock Iso/iec 27001:2022 information security, cybersecurity and privacy
+  protection — information security management systems — requirements.
+\newblock Standard, International Organization for Standardization and
+  International Electrotechnical Commission, Geneva, Switzerland.
+
+\bibitem[Jennings et~al., 2023]{WebRTC_W3C}
+Jennings, C., Castelli, F., Bruaroey, J.-I., and Boström, H. (2023).
+\newblock Webrtc: Real-time communication in browsers.
+\newblock W3c recommendation, World Wide Web Consortium (W3C).
+
+\bibitem[Peffers et~al., 2007]{Peffers2007}
 Peffers, K., Tuunanen, T., Rothenberger, M.~A., and Chatterjee, S. (2007).
-\newblock A design science research methodology for information systems research.
-\newblock In {\em Proceedings of the 1st International Conference on Design Science Research in Information Systems and Technology (DESRIST)}.
+\newblock A design science research methodology for information systems
+  research.
+\newblock In {\em Proceedings of the 1st International Conference on Design
+  Science Research in Information Systems and Technology (DESRIST)}.
+
+\bibitem[Shapiro et~al., 2011]{Shapiro2011_CRDT}
+Shapiro, M., Preguiça, N., Baquero, C., and Zawirski, M. (2011).
+\newblock A comprehensive study of convergent and commutative replicated data
+  types.
+\newblock Research Report RR-7506, Inria -- Centre Paris-Rocquencourt.
 
 \end{thebibliography}

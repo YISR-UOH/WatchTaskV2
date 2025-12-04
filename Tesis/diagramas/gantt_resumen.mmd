@@ -1,0 +1,90 @@
+
+%%{init: {
+  "theme": "neutral",
+  "gantt": {
+    "leftPadding": 220,
+    "barHeight": 18,
+    "barGap": 6,
+    "topPadding": 60
+  },
+  "themeVariables": {
+    "primaryColor": "#2D6A4F",
+    "primaryBorderColor": "#1B4332",
+    "taskTextColor": "#1f2937",
+    "doneTaskColor": "#6C757D",
+    "critTaskColor": "#D00000",
+    "activeTaskColor": "#FFB703",
+    "fontSize": "11px"
+  }
+}}%%
+
+gantt
+    title Gantt — Inicio 2025-09-01
+    dateFormat  YYYY-MM-DD
+  axisFormat  %d %b
+  tickInterval 2week
+    weekday monday
+    todayMarker stroke-width:0px,opacity:0
+
+    %% Semana 1 (2025-09-01 a 2025-09-07)
+    section Levantamiento (Semana 1)
+    Inicio                        :done,milestone, kick, 2025-09-01,0d
+    Levantamiento AS-IS                     :done, asis, 2025-09-01,2025-09-07
+    Métricas preliminares                   :done, metrics_pre, 2025-09-03,2025-09-07
+
+    %% Semanas 1-2 (2025-09-01 a 2025-09-14)
+    section Requisitos (Semanas 1–2)
+    Objetivos y alcance                     :done, scope, 2025-09-08,2025-09-12
+    Requerimientos funcionales (RF)         :done,crit, rf, 2025-09-12,2025-09-18
+    Requerimientos no funcionales (RNF)     :done,crit, rnf, 2025-09-18,2025-09-21
+    Backlog inicial + priorización          :done, backlog, 2025-09-11,2025-09-14
+
+    %% Semanas 2-3 (2025-09-08 a 2025-09-28)
+    section Diseño (Semanas 2–3)
+    Arquitectura lógica / módulos           :done,crit, arch, 2025-09-15,2025-09-22
+    Modelo de datos                         :done,model, 2025-09-22,2025-09-26
+    Wireframes UI                           :done,uiwire, 2025-09-20,2025-09-28
+    Aprobación de diseño                    :done,milestone, design_ok, 2025-09-28,0d
+
+    %% Semanas 3-6 (2025-09-15 a 2025-10-12)
+    section Construcción MVP (Semanas 3–6)
+    Auth + Roles (RBAC)                     :done,crit, auth, 2025-09-22,2025-10-01
+    Órdenes + Checklist local               :done,orders, 2025-10-01,2025-10-12
+    Parsing PDF (extracción)                :done,pdfparse, 2025-09-25,2025-10-12
+    Persistencia IndexedDB + Dexie          :done,storage, 2025-09-25,2025-10-12
+    UI base responsive                      :done,ui_base, 2025-09-24,2025-10-12
+    MVP básico listo                        :done,milestone, mvp_basic, 2025-10-12,0d
+
+    %% Semanas 6-7 (2025-10-06 a 2025-10-19)
+    section Ajustes Iterativos (Semanas 6–7)
+    Mejoras UI y flujos                     :done,adj_ui, 2025-10-13,2025-10-19
+    Optimización de sincronización          :done,adj_sync, 2025-10-13,2025-10-19
+
+    %% Semanas 8-9 (2025-10-20 a 2025-11-02)
+    section Evaluación Piloto (Semanas 8–9)
+    Pruebas de latencia / desconexión       :done,pilot_lat, 2025-10-20,2025-10-27
+    Usabilidad piloto (feedback)            :done,pilot_ui, 2025-10-27,2025-10-31
+    Ajustes post-piloto                     :done,pilot_fix, 2025-10-29,2025-11-02
+
+    %% Semana 10 (2025-11-03 a 2025-11-09)
+    section Optimización (Semana 10)
+    Refactor sincronización / batching      :done,opt_sync, 2025-11-03,2025-11-09
+    Hardening seguridad + permisos          :done,security, 2025-11-03,2025-11-09
+    Refinamiento UI / accesibilidad         :done,opt_ui, 2025-11-03,2025-11-09
+    Presentación intermedia 2               :done,milestone, demo2, 2025-11-09,0d
+
+    %% Semana 11 (2025-11-10 a 2025-11-16)
+    section Ajustes Finales (Semana 11)
+    Estabilidad y correcciones finales      :done,final_adj, 2025-11-10,2025-11-16
+    Plataforma estable                      :done,milestone, stable, 2025-11-16,0d
+
+    %% Semana 12 (2025-11-17 a 2025-11-23)
+    section Validación Final y Cierre (Semana 12)
+    Métricas consolidadas                   :active,metrics_final, 2025-11-17,2025-11-20
+    Informe final y documentación           :active,report, 2025-11-20,2025-11-23
+    Cierre del proyecto                     :active,milestone, close, 2025-11-23,0d
+
+
+    
+
+   

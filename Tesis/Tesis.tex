@@ -1,11 +1,34 @@
-\documentclass[12pt,a4paper]{report}
-\usepackage[utf8]{inputenc}
+\documentclass[10pt,a4paper]{report}
 \usepackage[spanish]{babel}
 \usepackage{amsmath, amssymb}
 \usepackage{graphicx}
 \usepackage{geometry}
+% Tipografía:"Lucida Sans Unicode"
+\usepackage{fontspec}
+\setmainfont{Lucida Sans Unicode}[
+    Ligatures=TeX,
+    UprightFont = * ,
+    BoldFont   = * ,
+    ItalicFont = * ,
+    BoldItalicFont = * ,
+    BoldFeatures={FakeBold=2},
+    ItalicFeatures={FakeSlant=0.2},
+    BoldItalicFeatures={FakeBold=2,FakeSlant=0.2}
+]
+\setsansfont{Lucida Sans Unicode}[
+    Ligatures=TeX,
+    UprightFont = * ,
+    BoldFont   = * ,
+    ItalicFont = * ,
+    BoldItalicFont = * ,
+    BoldFeatures={FakeBold=2},
+    ItalicFeatures={FakeSlant=0.2},
+    BoldItalicFeatures={FakeBold=2,FakeSlant=0.2}
+]
+
+\usepackage{xcolor}
+\definecolor{uoh}{RGB}{79,131,198}
 \usepackage{hyperref}
-% Hipervínculos como texto coloreado (sin recuadros) usando el color institucional
 \hypersetup{
     colorlinks=true,
     linkcolor=uoh,
@@ -13,19 +36,49 @@
     citecolor=uoh,
     filecolor=uoh
 }
-% URLs con el mismo estilo tipográfico que el texto
 \urlstyle{same}
 \usepackage{setspace}
-\usepackage{xcolor}
-\definecolor{uoh}{RGB}{79,131,198}
+\usepackage{float}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancypagestyle{plain}{%
+    \fancyhf{}
+    \rfoot{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0pt}%
+}
 
-
-\geometry{left=3cm,right=2.5cm,top=2cm,bottom=2.5cm}
-\setstretch{1.5}
+% Formato de títulos y subtítulos según especificación del usuario:
+% Capítulos: centrados y en negrita, mismo tamaño del cuerpo (10pt), sin punto final.
+% Secciones (1er nivel): alineadas a la izquierda, en negrita, sin punto final.
+% Sub-secciones (2do nivel): alineadas a la izquierda, en negrita y cursiva, sin punto final.
+% Sub-subsecciones (3er nivel): con sangría, en negrita (sin cursiva) y formato "run-in" terminando con punto.
+\usepackage{titlesec}
+\newcommand{\headingbf}{\addfontfeatures{FakeBold=3}\bfseries\normalsize}
+\newcommand{\headingbfit}{\addfontfeatures{FakeBold=3,FakeSlant=0.2}\bfseries\itshape\normalsize}
+\csname titleformat\endcsname{\chapter}[display]{\centering\headingbf}{\csname thechapter\endcsname}{1ex}{}
+\csname titleformat\endcsname{name=\chapter,numberless}[display]{\centering\headingbf}{}{0pt}{}
+\csname titleformat\endcsname{\section}{\headingbf}{\csname thesection\endcsname}{0.75em}{}
+\csname titleformat\endcsname{\subsection}{\headingbf}{\csname thesubsection\endcsname}{0.75em}{}
+\csname titleformat\endcsname{\subsubsection}[runin]{\headingbf}{\csname thesubsubsection\endcsname}{0.75em}{}[.]
+\csname titlespacing\endcsname*{\chapter}{0pt}{0pt}{2ex}
+\csname titlespacing\endcsname*{\section}{0pt}{2ex plus 0.5ex minus 0.2ex}{1ex}
+\csname titlespacing\endcsname*{\subsection}{\parindent}{1.5ex plus 0.5ex minus 0.2ex}{0.5ex}
+\csname titlespacing\endcsname*{\subsubsection}{\parindent}{0pt}{0.5em}
+\makeatletter
+\renewcommand\footnotesize{\@setfontsize\footnotesize{8pt}{9.5pt}}
+\makeatother
+\newcommand{\includegraphicsIfExists}[2][]{%
+    \IfFileExists{#2}{\includegraphics[#1]{#2}}{\fbox{\parbox{0.9\textwidth}{\centering Figura pendiente: \texttt{\detokenize{#2}}}}}}
 
 \begin{document}
-
 \begin{titlepage}
+
+    	
     \centering
     {\includegraphics[width=0.3\textwidth]{data/logo.png}\par}
     {\normalsize\sffamily\textcolor{uoh}{Facultad de Ingeniería Civil en Computación}\par}
@@ -39,24 +92,29 @@
     {\normalsize Memoria para optar al título de Ingeniería Civil en Computación \par}
     \vfill
     {\normalsize Rancagua, Chile \par}
-    {\normalsize Octubre, 2025 \par}
+    {\normalsize Noviembre, 2025 \par}
+\thispagestyle{fancy}
+
+    \pagenumbering{arabic}
+\setcounter{page}{1} 
 \end{titlepage}
-\pagenumbering{roman} 
+
+\setcounter{page}{2} 
 \tableofcontents
 \listoffigures
 \listoftables
 
-\clearpage
-\pagenumbering{arabic} % Números arábigos desde aquí
 
 \chapter*{Introducción}
 \addcontentsline{toc}{chapter}{Introducción}
-\setcounter{page}{1}   % Empieza desde la página 1
 
-En el entorno industrial actual, el mantenimiento preventivo y correctivo representa un factor crítico para garantizar la continuidad operacional y la optimización de recursos. Las empresas manufactureras enfrentan desafíos constantes relacionados con la planificación, ejecución y seguimiento de tareas de mantenimiento, especialmente cuando se trata de coordinar múltiple personal y gestiónar extensos procedimientos operativos.
-El presente proyecto surge de la necesidad identificada en CARTOCOR, una empresa del sector industrial dedicada a la manufactura de cartón, donde se evidencia la ausencia de un sistema digitalizado para la gestión y seguimiento de ordenes de mantenimiento. La organización mantiene sus procedimientos operativos en formatos tradicionales (papel) con el apoyo de un servicio que no les da las herramientas requeridas (JD Edwards), lo que genera ineficiencia en la asignación de tareas, debido a que, la distribución manual de pautas de mantenimiento entre el personal resulta en tiempos muertos, mala gestión de cargas de trabajo y falta de visibilidad sobre el estado de las tareas. Tambien dificultad en el seguimiento en tiempo real sobre el estado de las tareas asignadas lo cual compromete la planificación operativa, los resultados de mantenimiento y la capacidad de respuesta ante imprevistos. Finalmente la inexistencia de trazabilidad en el tiempo impide hacer seguimiento a las órdenes de mantenimiento lo cual dificulta la identificación de patrones de fallas, el problema no siempre es de la máquina; también puede ser humano. Además la trazabilidad puede permitir identificar si los tiempos estimados se cumplen o no, y si es necesario ajustar los tiempos de las tareas de mantenimiento para ser mas realistas.
+En el entorno industrial actual, el mantenimiento preventivo y correctivo representa un factor crítico para garantizar la continuidad operacional y la optimización de recursos. Las empresas manufactureras enfrentan desafíos constantes relacionados con la planificación, ejecución y seguimiento de tareas de mantenimiento, especialmente cuando se trata de coordinar múltiple personal y gestionar extensos procedimientos operativos.
 
-Debido a esto, la empresa requiere una plataforma que se adapte a sus necesidades operativas, que permita la digitalización de sus procedimientos de mantenimiento, la asignación eficiente de tareas, el seguimiento en tiempo real y la trazabilidad de las órdenes de mantenimiento, con ello buscar modernizar sus procesos y mejorar la planificación operativa.
+El presente proyecto surge de la necesidad identificada en CARTOCOR, una empresa del sector industrial dedicada a la manufactura de cartón, donde se evidencia la ausencia de un sistema digitalizado efectivo para la gestión de campo. La organización mantiene sus procedimientos operativos en formatos tradicionales (papel) apoyándose en un sistema central (JD Edwards) que no ofrece herramientas móviles adecuadas para el personal técnico. Esta situación se ve agravada por una limitación estructural crítica: la planta productiva presenta deficiencias severas de conectividad. El alcance de la red WiFi de libre uso no cubre la totalidad de las instalaciones y, en diversos sectores, la interferencia estructural o de las maquinarias impide el uso confiable de redes móviles de datos, haciendo inviable la implementación de soluciones web tradicionales que requieran conexión permanente.
+
+La dependencia de flujos manuales en un entorno con conectividad intermitente genera ineficiencias significativas en la asignación de tareas, provocando tiempos muertos entre la emisión de la orden y su recepción física. Asimismo, la falta de visibilidad en tiempo real sobre el estado de las tareas compromete la capacidad de respuesta ante imprevistos. Finalmente, la inexistencia de trazabilidad histórica impide identificar patrones de fallas y dificulta distinguir entre problemas propios de la maquinaria y errores en la ejecución humana, limitando la capacidad de ajustar los tiempos estimados de mantenimiento a la realidad operativa.
+
+Debido a esto, la empresa requiere una plataforma que no solo digitalice sus procedimientos, sino que posea la resiliencia técnica para operar en condiciones de desconexión (offline). El objetivo es proveer una solución que garantice la asignación eficiente, el seguimiento y la trazabilidad de las órdenes de mantenimiento sin depender de la infraestructura de red, modernizando así los procesos y asegurando la continuidad operativa en toda la planta.
 
 
 \chapter*{Objetivos}
@@ -70,192 +128,744 @@ La aplicación utilizará una arquitectura modular compuesta por: frontend React
  
 \newpage
 \section*{Objetivo Específico}
-\addcontentsline{toc}{section}{Objetivos Específico}
+\addcontentsline{toc}{section}{Objetivo Específico}
 
 \begin{enumerate}
     \item Adaptar y digitalizar los procedimientos operativos de mantenimiento existentes en CARTOCOR, transformando los formatos tradicionales en un sistema digitalizado que permita una gestión más eficiente, segura y trazable.
     \item Implementar una red P2P utilizando WebRTC para la sincronización de datos entre dispositivos, permitiendo la colaboración en tiempo real entre supervisores y mantenedores, incluso en entornos con conectividad limitada.
     \item Desarrollar un modulo que procese las pautas existentes en formato PDF, extrayendo la información relevante para su almacenamiento y gestión dentro del sistema.
     \item Crear una interfaz web responsive utilizando tecnologías modernas que se adapte a múltiples dispositivos y proporcione una experiencia de usuario optimizada para entornos industriales.
-    \item Desarrollar un módulo de gestión de pautas que permita la visualización, asignación, seguimiento y realizacion de procedimientos de mantenimiento.
+    \item Desarrollar un módulo de gestión de pautas que permita la visualización, asignación, seguimiento y realización de procedimientos de mantenimiento.
     \item Establecer una arquitectura escalable que facilite futuras expansiones del sistema y la integración con otros sistemas empresariales.
 \end{enumerate}
-
-\chapter*{Hipótesis de Trabajo}
-\addcontentsline{toc}{chapter}{Hipótesis de Trabajo}
-La implementación de una solución tecnológica que se integre y adapte a las plataformas existentes dentro de la empresa en el area de mantenimiento de CARTOCOR permitirá mejorar significativamente la eficiencia operativa, la trazabilidad de las tareas y la planificación de mantenimiento, al proporcionar un sistema que optimiza la asignación de tareas, permitiendo el seguimiento en tiempo real y garantizando la seguridad de la información a través de una aplicacion web progresiva (PWA) con capacidades offline y colaboración en tiempo real.
 
 
 \chapter*{Alcance}
 \addcontentsline{toc}{chapter}{Alcance}
-El sistema a desarrollar abarca la gestión completa del ciclo de vida de las órdenes de mantenimiento, desde su creación y asignación hasta su ejecución y trazabilidad en el tiempo. Se incluye la implementación de una red P2P desentralizada con almacenamiento redundante y jerarquico en los dispositivos de la red, flujo de datos entre los peers y generacion de informes respectivo a los datos. La aplicación será accesible desde dispositivos móviles y de escritorio, adaptándose a las necesidades operativas de los usuarios en el entorno industrial. Se implementará un sistema de autenticación y autorización para garantizar la seguridad y privacidad de los datos, así como mecanismos de respaldo y recuperación ante fallos.  La aplicación estará diseñada para operar en entornos con conectividad intermitente, utilizando almacenamiento local y sincronización P2P para asegurar la continuidad operativa. Se desarrollará una interfaz de usuario intuitiva y fácil de usar, con funcionalidades específicas para supervisores y mantenedores. Se proporcionará soporte para la generación y visualización de informes históricos y analíticos sobre las órdenes de mantenimiento.
+El sistema a desarrollar abarca la gestión completa del ciclo de vida de las órdenes de mantenimiento, desde su creación y asignación hasta su ejecución y trazabilidad en el tiempo. Se incluye la implementación de una red P2P descentralizada con almacenamiento redundante y jerárquico en los dispositivos de la red, flujo de datos entre los peers y generación de informes respecto a los datos. La aplicación será accesible desde dispositivos móviles y de escritorio, adaptándose a las necesidades operativas de los usuarios en el entorno industrial. Se implementará un sistema de autenticación y autorización para garantizar la seguridad y privacidad de los datos, así como mecanismos de respaldo y recuperación ante fallos.  La aplicación estará diseñada para operar en entornos con conectividad intermitente, utilizando almacenamiento local y sincronización P2P para asegurar la continuidad operativa. Se desarrollará una interfaz de usuario intuitiva y fácil de usar, con funcionalidades específicas para supervisores y mantenedores. Se proporcionará soporte para la generación y visualización de informes históricos y analíticos sobre las órdenes de mantenimiento.
 \newline
-El proyecto no incluye la integración directa con sistemas ERP existentes, aunque la arquitectura estara diseñada para un facil acoplamiente con las plataformas existentes en Cartocor, de esta manera poder ser utilizada como complemento.
+El proyecto no incluye la integración directa con sistemas ERP existentes, aunque la arquitectura estará diseñada para un fácil acoplamiento con las plataformas existentes en CARTOCOR, de esta manera poder ser utilizada como complemento.
 
 \chapter*{Marco Teórico}
 \addcontentsline{toc}{chapter}{Marco Teórico}
 
-\section*{Gestión del mantenimiento industrial}
-La gestión del mantenimiento se enmarca dentro de la disciplina de la ingeniería de confiabilidad, la cual busca maximizar la disponibilidad de los activos productivos optimizando recursos humanos y materiales. Conceptos como Mantenimiento Centrado en Confiabilidad (RCM), Total Productive Maintenance (TPM) y mantenimiento predictivo orientan la identificación de criticidades, la priorización de intervenciones y la medición de indicadores clave (MTBF, MTTR, OEE). Estos enfoques constituyen la base operativa sobre la que se articula la digitalización propuesta.
+El diseño de una solución tecnológica para un entorno industrial requiere comprender tanto el dominio del problema (la gestión del mantenimiento) como las herramientas técnicas que permiten resolver sus restricciones particulares (conectividad y falta de infraestructura). A continuación, se presentan los fundamentos teóricos que sustentan la propuesta, estableciendo la relación entre las necesidades operativas de la planta y las tecnologías seleccionadas.
 
-\subsection*{Digitalización de procesos de mantenimiento}
-La migración desde flujos manuales hacia sistemas digitales implica modelar procedimientos, trazabilidad documental y gobernanza de datos. Las arquitecturas empresariales contemporáneas incorporan capas de integración con sistemas ERP y plataformas de analítica, donde la interoperabilidad y el cumplimiento normativo (ISO 55000, ISO 14224)\cite{iso55000:2014,iso14224:2016} resultan determinantes para consolidar repositorios de conocimiento y reducir el riesgo operativo.
+\section*{Gestión del mantenimiento industrial como base del problema}
+La gestión del mantenimiento no se trata solo de reparar máquinas, sino de maximizar la disponibilidad de los activos productivos mediante estrategias organizadas. En este contexto, metodologías como el \textbf{Mantenimiento Centrado en Confiabilidad (RCM)} y el \textbf{Mantenimiento Productivo Total (TPM)} son estándares en la industria.
 
-\section*{Transformación digital e Industria 4.0}
-El paradigma de Industria 4.0 habilita fábricas conectadas capaces de intercambiar información en tiempo real. Tecnologías como Internet of Things (IoT), ciberfísicos y analítica avanzada permiten visualizar estados operacionales y anticipar fallas. La propuesta se alinea con estos principios al introducir una plataforma colaborativa, resiliente y móvil que soporta sincronización distribuida y operación offline para entornos con conectividad intermitente.
+Estos enfoques dependen críticamente de la calidad de los datos: para calcular indicadores como el Tiempo Medio Entre Fallas (MTBF) o la Efectividad Global del Equipo (OEE), es necesario registrar con precisión cuándo falla una máquina y cuánto tiempo toma repararla \cite{ISO14224:2016}.
 
-\section*{Aplicaciones web progresivas (PWA)}
-Las PWA combinan capacidades de aplicaciones nativas con la ubicuidad de la web mediante el uso de Service Workers, Application Shell Architecture y Web App Manifests. Estos componentes permiten cacheo inteligente, notificaciones push y actualizaciones progresivas, garantizando continuidad de servicio y experiencia de usuario consistente. En contextos industriales, las PWA facilitan despliegues controlados, disminuyen costos de mantenimiento y aseguran compatibilidad con diferentes dispositivos.
+En el caso de estudio (CARTOCOR), la gestión actual basada en papel impide la aplicación efectiva de RCM o TPM, ya que los datos de ``hallazgos'' y ``tiempos de reparación'' quedan aislados en formularios físicos, se pierden o no se registran. Por lo tanto, la digitalización propuesta no es un fin en sí mismo, sino el mecanismo habilitante para que la empresa pueda evolucionar hacia estas estrategias de mantenimiento avanzadas, cumpliendo con estándares de gestión de activos como ISO 55000 \cite{ISO55000:2014}.
 
-\subsection*{Persistencia local y operación offline}
-IndexedDB constituye el estándar para almacenamiento estructurado en navegadores, soportando transacciones y consultas asincrónicas. Bibliotecas como Dexie abstraen la complejidad de la API nativa y proveen mecanismos de versionado, migraciones y notificaciones de cambio. Estas capacidades son esenciales para registrar órdenes de trabajo, controles de checklist y evidencias fotográficas cuando la red es inestable.
+\section*{Estado del Arte y Soluciones Comerciales}
+En el mercado actual existen soluciones robustas para la Gestión de Mantenimiento Asistido por Computadora (CMMS). Las más destacadas son:
 
-\section*{Sincronización distribuida y colaboración en tiempo real}
-La sincronización P2P basada en WebRTC posibilita el intercambio directo de datos entre clientes sin pasar por servidores intermedios, reduciendo latencias y habilitando tolerancia a fallos. La señalización mediada por servicios como Firebase Realtime Database establece los canales de comunicación, mientras que patrones de replicación eventual y estructuras de datos convergentes (CRDT) aseguran consistencia pese a desconexiones temporales. El diseño requiere políticas de versionado, reconciliación de conflictos y registros de auditoría.
+\begin{itemize}
+    \item \textbf{SAP Plant Maintenance (PM):} Es el estándar corporativo para grandes industrias. Ofrece integración total con finanzas y logística. Sin embargo, su implementación requiere una infraestructura de servidores costosa, licencias por usuario de alto valor y una conexión de red estable y permanente con el servidor central, lo cual no es viable en la planta de CARTOCOR dada la infraestructura actual.
+    \item \textbf{Fiix / Rockwell Automation:} Una solución moderna basada en la nube (SaaS). Aunque ofrece interfaces amigables y aplicaciones móviles, su modelo de negocio se basa en suscripciones mensuales por usuario (OPEX) y depende críticamente de la conectividad a internet para sincronizar datos, careciendo de una verdadera autonomía offline prolongada o capacidad P2P sin servidor.
+\end{itemize}
 
-\section*{WebRTC y Redes P2P para Sincronización de Datos}
-Web Real-Time Communication (WebRTC) es un conjunto de especificaciones y APIs que habilita comunicaciones de baja latencia (audio, video y datos arbitrarios) directamente entre navegadores y otras aplicaciones compatibles. Su adopción en aplicaciones de mantenimiento industrial se justifica por: (i) reducción de dependencia en servidores centrales, (ii) resiliencia ante fallos de conectividad parcial, (iii) menor latencia en la propagación de cambios operativos y (iv) escalabilidad horizontal basada en los propios dispositivos de la planta.
+Si bien estas herramientas son líderes en la industria, fueron descartadas para este proyecto debido a una restricción presupuestaria determinante: en el contexto de la empresa, el área de mantenimiento es gestionada bajo una política estricta de control de gastos. La organización no aprobó el presupuesto necesario para licencias recurrentes ni para la adquisición de servidores dedicados. Por tanto, se requería una solución que aprovechara el hardware existente y operara sin costos de licenciamiento (Software a Medida).
 
-\subsection*{Arquitectura lógica de WebRTC}
-Un canal WebRTC se establece en tres fases: negociación de sesión (oferta/respuesta SDP), descubrimiento de rutas (recolección e intercambio de candidatos ICE) y establecimiento seguro de canales (DTLS-SRTP para medios y DTLS sobre SCTP para datos). La plataforma se apoya en un servicio de señalización externo (Firebase Realtime Database) exclusivamente para intercambiar metadatos de sesión, evitando transportar la carga útil por la infraestructura central.
+\section*{Transformación digital y el reto de la conectividad}
+El paradigma de la \textbf{Industria 4.0} promueve la interconexión de sistemas para la toma de decisiones en tiempo real. Sin embargo, la realidad de muchas plantas productivas incluye ``zonas oscuras'' sin conectividad a internet ni redes locales fiables, lo que dificulta la implementación de soluciones en la nube convencionales (SaaS).
 
-\subsection*{Mecanismo ICE y candidatos de conectividad}
-Interactive Connectivity Establishment (ICE) coordina la comprobación de pares potenciales de transporte combinando direcciones locales (host), reflejadas (STUN) y de retransmisión (TURN). En entornos corporativos con NAT simétricos o firewalls restrictivos, la disponibilidad de un servidor TURN es determinante para garantizar conectividad. La priorización dinámica de candidatos optimiza latencia y estabilidad de la sesión.
+Para enfrentar este desafío, esta tesis adopta un enfoque \textit{Offline-First}, donde la continuidad operativa no depende de la red. Esto nos lleva a la selección de las \textbf{Aplicaciones Web Progresivas (PWA)} como plataforma base.
 
-\subsection*{Rol de STUN y TURN}
-Los servidores STUN proporcionan la dirección pública del cliente para facilitar la conectividad directa, mientras que TURN retransmite el tráfico cuando la conexión peer-to-peer directo resulta inviable. El diseño balancea costo y disponibilidad limitando el uso de TURN a escenarios de bloqueo estricto, preservando así eficiencia de ancho de banda.
+\section*{Aplicaciones Web Progresivas (PWA) y Operación Offline}
+Las PWA representan una evolución en el desarrollo web, permitiendo que una aplicación ejecutada en el navegador ofrezca capacidades previamente exclusivas del software nativo, como funcionamiento sin conexión, acceso a hardware y gestión de almacenamiento local \cite{MDN_PWA}.
 
-\subsection*{Data Channels y SCTP}
-Los DataChannels de WebRTC utilizan SCTP encapsulado sobre DTLS, ofreciendo modos confiables y no confiables, ordenados o desordenados. Esta flexibilidad permite adaptar la entrega de mensajes: para metadatos críticos (versiones, confirmaciones) se usa un canal confiable y ordenado; para actualizaciones incrementales o notificaciones no críticas se puede optar por canales no confiables que reducen latencia al evitar retransmisiones excesivas.
+\subsection*{Service Workers y Cacheo Inteligente}
+El componente central que habilita la resiliencia offline es el \textbf{Service Worker}. Este actúa como un proxy de red programable que intercepta las solicitudes del navegador, permitiendo servir recursos desde una caché local cuando la red no está disponible \cite{ServiceWorkers_W3C}. En el contexto de esta tesis, el Service Worker garantiza que los mantenedores puedan cargar la interfaz de la aplicación y acceder a las pautas de mantenimiento incluso estando dentro de una máquina o en un almacenamiento sin señal.
 
-\subsection*{Modelos de consistencia y resolución de conflictos}
-La naturaleza distribuida de la red exige estrategias de consistencia eventual. Se emplean números de versión monótonos y marcas temporales lógicas para ordenar operaciones. Para colecciones estructuradas se considerarían CRDTs (por ejemplo, mapas de última escritura ganadora - LWW) si la complejidad de conflictos creciera. La política local actual prioriza: (1) versión mayor, (2) igualdad de versión: última marca temporal, (3) igualdad completa: descartar duplicado.
+\subsection*{Persistencia de Datos: IndexedDB}
+Mientras que el Service Worker maneja los archivos de la aplicación (HTML, JS, CSS), los datos transaccionales (órdenes de trabajo, checklists, lecturas) deben guardarse en una base de datos local robusta.
 
-\subsection*{Topologías y escalabilidad}
-Aunque WebRTC facilita mallas completas (full-mesh), el crecimiento cuadrático de conexiones (complejidad $O(n^2)$) limita su escalabilidad. Para el caso de uso (número moderado de supervisores y mantenedores) una malla controlada es suficiente. Futuras extensiones podrían incorporar \textit{super-peers} (nodos con mayores capacidades) para agregación de snapshots o un enfoque jerárquico/árbol parcial que reduzca la sobrecarga a aproximaciones más cercanas a $O(n)$ en la distribución de estados agregados.
+\textbf{IndexedDB} es el estándar web para el almacenamiento de grandes cantidades de datos estructurados en el cliente, soportando búsquedas de alto rendimiento y operaciones transaccionales \cite{IndexedDB_W3C}. Dado que la API nativa de IndexedDB es compleja, en este proyecto se utiliza la biblioteca \textbf{Dexie.js}, la cual facilita el manejo de consultas y el versionado del esquema de base de datos \cite{DexieJS}, asegurando que los datos recolectados por los mantenedores se preserven seguros en el dispositivo hasta que puedan sincronizarse.
 
-\subsection*{Seguridad y cifrado de extremo a extremo}
-WebRTC cifra todos los canales utilizando DTLS, proporcionando confidencialidad e integridad. Se añaden controles de acceso a nivel de señalización (tokens y roles) que inhiben intentos de unión no autorizados. Las políticas de rotación de sesión y invalidación de credenciales reducen la ventana de explotación si se expone un identificador de sala o canal de señalización.
+\section*{Sincronización Descentralizada (P2P)}
+Una vez resuelto el problema del almacenamiento local, surge el desafío de compartir esta información entre usuarios (Supervisores y Mantenedores) sin depender de un servidor central, debido a las restricciones de infraestructura TI de la planta. Para ello, se recurre a la comunicación Peer-to-Peer (P2P).
 
-\subsection*{Limitaciones y mitigaciones}
-Entre las limitaciones se encuentran: (i) variabilidad de ruteo bajo NAT que causa reconexiones, (ii) consumo incremental de CPU en mallas densas, (iii) complejidad de depuración en rutas TURN y (iv) ausencia de almacenamiento histórico centralizado inmediato. Se mitiga mediante: reconexión exponencial, compresión y batching de cambios, monitoreo de métricas de sesión y periodicidad de snapshots para persistencia redundante.
+\subsection*{WebRTC para Comunicación en Tiempo Real}
+\textbf{WebRTC (Web Real-Time Communication)} es un estándar abierto que permite la transmisión de datos, audio y video directamente entre navegadores (peers) sin requerir plugins ni pasar por un servidor intermedio para el flujo de datos principal \cite{WebRTC_W3C}.
 
-\subsection*{Justificación en el contexto de mantenimiento}
-La elección de WebRTC reduce el riesgo de interrupción global al distribuir la responsabilidad de sincronización. Supervisores pueden continuar coordinando tareas y registrando evidencias aun cuando el enlace a Internet sea intermitente, propagando los cambios cuando se restablezcan rutas P2P o mediante reenvío diferido a través de pares disponibles.
+El uso de WebRTC en este proyecto se justifica por su capacidad de establecer \textbf{DataChannels} (Canales de Datos) arbitrarios. Estos canales utilizan el protocolo SCTP (Stream Control Transmission Protocol) encapsulado sobre DTLS (Datagram Transport Layer Security), lo que garantiza que la transferencia de órdenes de mantenimiento entre dispositivos sea segura, de baja latencia y fiable \cite{RFC8825}.
 
-\subsection*{Comparación con alternativas}
-En contraste con enfoques centralizados (REST polling, WebSockets a un servidor único), WebRTC minimiza single points of failure y latencias inducidas por hubs. Frente a soluciones de replicación eventual basadas sólo en sincronización diferida (por ejemplo, colas offline + reenvío), la capa P2P ofrece visibilidad inmediata de estado operativo, mejorando la coordinación táctica en planta.
+\subsection*{Establecimiento de Conexión: Señalización e ICE}
+Aunque la comunicación es directa entre dispositivos, los pares necesitan un mecanismo inicial para ``encontrarse''. Este proceso se denomina \textbf{Señalización} y consiste en el intercambio de metadatos de sesión (ofertas y respuestas SDP). En esta arquitectura, se utiliza \textbf{Firebase Realtime Database} \cite{FirebaseDocs} únicamente como alerta de union, minimizando la dependencia de la nube.
 
-\subsection*{Jerarquías de acceso y control de roles}
-Los modelos de control de acceso basado en roles (RBAC) permiten delimitar permisos para supervisores, mantenedores y administradores. La correcta implementación del RBAC garantiza segregación de funciones, soporte a flujos de aprobación y trazabilidad de cambios, requisitos críticos en plantas productivas sujetas a auditorías internas y externas.
+Para lograr la conexión a través de routers y firewalls corporativos, WebRTC utiliza el protocolo \textbf{ICE (Interactive Connectivity Establishment)}. ICE intenta conectar los dispositivos usando la mejor ruta posible:
+\begin{itemize}
+    \item \textbf{Host:} Conexión directa en la misma red local (LAN/WiFi), ideal para la planta.
+    \item \textbf{STUN:} Servidor que ayuda a descubrir la dirección IP pública si están en redes distintas.
+    \item \textbf{TURN:} Servidor de retransmisión (Relay) usado como último recurso si el firewall bloquea la conexión directa.
+\end{itemize}
 
-\section*{Experiencia de usuario y ergonomía digital}
-El diseño centrado en el usuario (UCD) y la ingeniería de usabilidad aseguran interfaces intuitivas, reducen tiempos de entrenamiento y disminuyen errores operativos.
+\section*{Consistencia de Datos en Sistemas Distribuidos}
+Al tener múltiples dispositivos modificando órdenes de mantenimiento de forma desconectada y sincronizándose después, es inevitable que ocurran conflictos de datos (ej. dos supervisores editando la misma orden).
 
-\section*{Analítica y toma de decisiones basada en datos}
-La integración de analítica descriptiva, diagnóstica y predictiva sobre los datos de mantenimiento habilita tableros de control, proyecciones de costo y evaluación de desempeño. Tecnologías de Business Intelligence y aprendizaje automático aportan modelos de pronóstico, detección de anomalías y recomendación de acciones correctivas, todo ello sustentado en la calidad y disponibilidad de la información capturada por la plataforma.
+Para abordar esto, la literatura sobre sistemas distribuidos propone el uso de \textbf{Tipos de Datos Replicados Libres de Conflictos (CRDTs)}. Estos aseguran que, independientemente del orden en que lleguen las actualizaciones, todas las réplicas converjan eventualmente al mismo estado \cite{Shapiro2011_CRDT}.
 
-\section*{Regulaciones y estándares aplicables}
-Los desarrollos tecnológicos en plantas industriales deben alinearse con marcos regulatorios de seguridad laboral, gestión de activos y protección de datos personales. Normativas como ISO 45001, ISO\/IEC 27001 y legislaciones de privacidad (por ejemplo, Ley 19.628 en Chile)\cite{iso45001:2018,iso27001:2022,ley19628} condicionan el diseño de controles técnicos y organizacionales, asegurando cumplimiento y confianza de las partes interesadas.
+En esta tesis se implementa una variante simplificada de un \textit{Last-Writer-Wins (LWW) Register}, una estrategia determinista donde, en caso de conflicto, prevalece el cambio con la marca de tiempo más reciente o el número de versión más alto. Esto garantiza la coherencia de los datos operativos sin requerir intervención manual compleja. Este caso de race condition deberia ser minimo o inexistente dado que los supervisores son los unicos que pueden asignar o modificar órdenes, y usualmente no habria mas de un supervisor por zona o equipo.
+
+\section*{Regulaciones y Seguridad}
+Finalmente, el desarrollo considera las normativas de seguridad de la información. El uso de protocolos cifrados (HTTPS para la PWA y DTLS para WebRTC) se alinea con las recomendaciones de seguridad industrial y estándares como ISO/IEC 27001 \cite{ISO27001:2022}, protegiendo la integridad de las órdenes de mantenimiento frente a manipulaciones no autorizadas.
 
 
 \chapter*{Metodología de Investigación y Desarrollo}
 \addcontentsline{toc}{chapter}{Metodología de Investigación y Desarrollo}
+
+%----------Metodologia----------%
 \section*{Tipo y enfoque de la investigación} La investigación es de tipo aplicada y adopta un enfoque mixto: cualitativo en el levantamiento y análisis de procesos de mantenimiento existentes, y cuantitativo en la evaluación de métricas de desempeño (latencia de sincronización, disponibilidad offline, tiempo medio de registro de tareas y resolución de conflictos de datos).
+\addcontentsline{toc}{section}{Tipo y enfoque de la investigación}
 
-\section*{Metodología general: Design Science Research} 
-Se sigue el paradigma Design Science Research (DSR) \cite{hevner2004,peffers2007}, abordando seis pasos: (1) identificación del problema, (2) definición de objetivos de solución, (3) diseño del artefacto, (4) construcción, (5) evaluación iterativa y (6) comunicación de resultados. El artefacto central es una plataforma PWA con sincronización P2P que digitaliza y traza órdenes de mantenimiento.
+\subsection*{Metodología general: Design Science Research.} 
+Se sigue el paradigma Design Science Research (DSR) \newline\cite{Hevner2004,Peffers2007}, abordando seis pasos: (1) identificación del problema, (2) definición de objetivos de solución, (3) diseño del artefacto, (4) construcción, (5) evaluación iterativa y (6) comunicación de resultados. El artefacto central es una plataforma PWA con sincronización P2P que digitaliza y traza órdenes de mantenimiento.
 
-\section*{Estrategia de desarrollo iterativo–incremental} El desarrollo se organiza en iteraciones cortas (2–3 semanas) aplicando principios ágiles: backlog evolutivo, priorización por valor de riesgo, prototipado temprano y refactorización continua. No se adopta un framework formal completo (Scrum) dado el carácter monousuario del equipo de desarrollo.
+\subsection*{Justificación del uso.}
+DSR es adecuado al abordar un problema socio-técnico donde la solución tecnológica (artefacto) requiere validación contextual y medición objetiva de desempeño y calidad. Permite iterar sobre el artefacto refinando requisitos e incorporar retroalimentación de supervisores y mantenedores.
 
-\section*{Fases del proceso} 
-\begin{enumerate} 
-    \item Relevamiento y análisis: entrevistas exploratorias, revisión de procedimientos actuales y mapeo de flujos manuales. 
-    
-    \item Definición de requerimientos: clasificación en funcionales (gestión de órdenes, sincronización P2P, operación offline) y no funcionales (disponibilidad, consistencia eventual, seguridad, usabilidad). 
 
-    \item Diseño arquitectónico: selección tecnológica (React, IndexedDB via Dexie, WebRTC, Firebase RTDB para señalización, service workers). 
 
-    \item Construcción incremental: implementación de módulos núcleo (auth local, almacenamiento, procesamiento del PDF, canal P2P, versionado). 
+%----------AS-IS----------%
 
-    \item Evaluación iterativa: pruebas funcionales, ensayos de desconexión/reconexión, medición de latencia y análisis de conflictos de datos. 
+\section*{Proceso actual (AS-IS)}
+Se detalla el flujo manual existente para evidenciar ineficiencias y riesgos operativos.
+\addcontentsline{toc}{section}{Proceso actual (AS-IS)}
 
-    \item Optimización y refactorización: mejoras en jerarquía de roles, batching de sincronización, ergonomía de UI. 
-
-    \item Validación final: consolidación de métricas y contrastación con objetivos definidos. 
+\subsection*{Descripción del flujo actual existente.}
+Este flujo se inicia todas las semanas cada jueves o viernes, solo en las órdenes de mecánicos y eléctricos se imprimen aproximadamente 1000 hojas.
+\begin{enumerate}
+    \item Encargado de JD Edwards imprime las órdenes de mantenimiento desde el sistema.
+    \item Las órdenes se entregan físicamente al supervisor de mantenimiento de cada especialidad (eléctrico, mecánico, otros).
+    \item Supervisor junta las órdenes en grupos segun máquina y trabajo a realizar.
+    \item Supervisor distribuye físicamente las órdenes a los mantenedores asignados.
+    \item Mantenedores ejecutan las tareas según las pautas impresas, hallazgos y observaciones en los formularios.
+    \item Las órdenes completadas son entregadas por el mantenedor al supervisor al finalizar el turno.
+    \item Supervisor revisa y consolida las órdenes completadas.
+    \item Supervisor entrega las órdenes al encargado de JD Edwards para su registro digital.
+    \item Encargado de JD Edwards anota las órdenes completas en el sistema.
+    \item Encargado de JD Edwards almacena fisicamente las órdenes en montones dispersos dentro de la oficina.
+    \item Si una orden no es completada en el turno, entonces esta se pasa al siguiente día (``reprogramación'') o a la siguiente mantención de la máquina correspondiente hasta que sean completadas.
 \end{enumerate}
 
-\section*{Instrumentos y técnicas}
 
-Observación de procesos de mantenimiento existentes.
-Análisis documental (pautas en PDF).
-Pruebas de caja negra y escenarios offline.
-Mediciones de tiempo (latencia P2P, tiempo de carga inicial, tiempo de parse de PDF).
-Registro de conflictos y resolución (log de versiones y reconciliaciones).
+\subsection*{Actores y roles actuales.}
+\begin{itemize}
+    \item Encargado de JD Edwards: imprime y registra órdenes en el sistema.
+    \item Supervisor: asigna órdenes y consolida resultados.
+    \item Mantenedor: ejecuta órdenes de mantenimiento y registra hallazgos en papel.
+\end{itemize}
 
-\section*{Criterios de evaluación} Se adoptan atributos de calidad inspirados en ISO/IEC 25010\cite{iso25010:2011}: funcionalidad, fiabilidad (consistencia eventual y manejo de desconexiones), eficiencia de desempeño (tiempo de sincronización), usabilidad (flujo de tareas), mantenibilidad (modularidad) y seguridad (aislamiento de roles, cifrado en tránsito).
+\subsection*{Herramientas utilizadas hoy.}
+Papel impreso para pautas, JD Edwards y almacenamiento físico sin orden o lugar especificado.
 
-\section*{Métricas clave} \begin{itemize} \item Latencia media de propagación de cambios P2P (ms). \item Tasa de éxito de operaciones offline (\% operaciones almacenadas y sincronizadas sin pérdida). \item Tasa de conflictos por 100 sincronizaciones. \item Tiempo medio de parse de una pauta PDF (s). \item Peso de assets iniciales (KB) y tiempo de carga en primer y segundo arranque (frío / caliente). \end{itemize}
+\subsection*{Problemas detectados y efectos operacionales.}
+\begin{itemize}
+    \item Dependencia del encargado de JD Edwards, si no está, no se imprimen ni registran órdenes, impidiendo la continuidad operativa.
+    \item Retraso en distribución (tiempos muertos entre impresión y recepción).
+    \item Pérdida de registros (extravio físico, deterioro por ambiente industrial), el cual aumenta cuando una orden se reprograma varias veces.
+    \item Falta de visibilidad en tiempo real (estado de órdenes y progreso de tareas).
+    \item Imposibilidad de analítica histórica consistente (fragmentación de datos).
+\end{itemize}
 
-\section*{Gestión de riesgos} Riesgos abordados: (i) conectividad intermitente (mitigado con almacenamiento local y reintentos exponenciales), (ii) conflicto de versiones (versionado monótono y reglas de resolución), (iii) saturación de malla P2P (limitación de peers simultáneos y potencial diseño jerárquico), (iv) inconsistencia en parse de PDFs (validaciones y logs de errores).
+\subsection*{Cuantificación preliminar (estimaciones).}
+\begin{itemize}
+    \item Tiempo promedio de impresión y preparación: 30--45 minutos por lote semanal.
+    \item Tiempo promedio en agrupación y distribución física: 20--40 minutos por supervisor.
+    \item Tiempo promedio de traspaso de información: 60--120 minutos post-ejecución.
+    \item Frecuencia estimada de pérdida de registros: 5--10\% mensual (formularios incompletos / extraviados).
 
-\section*{Consideraciones éticas y de seguridad} Protección de datos operativos mediante control de roles, minimización de superficie de ataque (no exponer endpoints innecesarios) y cifrado end-to-end de canales WebRTC.
+\end{itemize}
+
+\subsection*{Díagrama AS-IS.}
+% Forzamos la figura a mostrarse exactamente aquí usando [H]
+\begin{figure}[H]
+    \centering
+    \includegraphicsIfExists[width=1\textwidth]{data/as_is_flujo.png}
+    \caption{Flujo operativo actual (AS-IS).}
+    \label{fig:ASIS}
+\end{figure}
+
+
+
+%----------Requerimientos----------%
+\section*{Definición del Problema y Requerimientos}
+\addcontentsline{toc}{section}{Definición del Problema y Requerimientos}
+
+Necesidad: Digitalizar, sincronizar y trazar órdenes de mantenimiento con resiliencia offline y colaboración multi-rol, reduciendo pérdida de información y tiempos de coordinación.
+
+\subsection*{Requerimientos funcionales (RF).}
+\begin{enumerate}
+    \item [\textbf{RF1.}] Extracción de Datos: se debe extraer la información de las pautas generadas en PDF por JD Edwards y estructurar los datos para su almacenamiento y posterior uso. 
+    \item [\textbf{RF2.}] Agrupar órdenes: se debe poder filtrar y agrupar las órdenes por especialidad, máquina y fecha.
+    \item [\textbf{RF3.}] Asignación de órdenes: asignación digital de órdenes a mantenedores.
+    \item [\textbf{RF4.}] Operación offline: acceso y modificación de órdenes y tareas sin conectividad continua. 
+    \item [\textbf{RF5.}] Sincronización de datos: comunicacion entre los diferentes roles para el flujo de las órdenes de mantenimiento.
+    \item [\textbf{RF6.}] Gestión de tareas y checklist: estados por tárea, confirmaciones y evidencia de término.
+    \item [\textbf{RF7.}] Adjuntos y evidencias: carga y persistencia local de anexos (notas, mediciones encontradas) con posterior sincronización.
+    \item [\textbf{RF8.}] Inicio y cierre de órdenes: validación de checklist y firmas digitales.
+    \item [\textbf{RF9.}] Firmas digitales simples (acreditación de cierre de orden por rol).
+    \item [\textbf{RF10.}] Control de roles y permisos (Administrador, Supervisor, Mantenedor).
+    \item [\textbf{RF11.}] Visualización de historiales y métricas básicas (latencia, tiempos de finalización).
+    \item [\textbf{RF12.}] Generar PDFs de órdenes completadas con evidencias adjuntas.
+\end{enumerate}
+
+\subsection*{Requerimientos no funcionales (RNF).}
+\begin{enumerate}
+    \item [\textbf{RNF1.}] Al subir las pautas en PDF y procesarlas, el sistema debe enviar automáticamente las órdenes extraídas a los supervisores correspondientes segun la especialidad de la orden.
+    \item [\textbf{RNF2.}] Disponibilidad en redes intermitentes (funcionalidad esencial accesible sin red).
+    \item [\textbf{RNF3.}] Usabilidad industrial: interfaz responsive, intuitiva y consistencia de acciones principales.
+    \item [\textbf{RNF4.}] Seguridad: autenticación basada en roles, segmentacion de datos y permisos de acciones.
+    \item [\textbf{RNF5.}] Consistencia eventual garantizada: reconciliación sin pérdida neta de operaciones válidas.
+    \item [\textbf{RNF6.}] Mantenibilidad: modularidad (contextos React, utilidades aisladas, migraciones Dexie versionadas).
+    \item [\textbf{RNF7.}] Tolerancia a conflictos: política de resolución determinista (versión mayor / última marca temporal).
+    \item [\textbf{RNF8.}] Sincronización automatica: detección de peers, roles y estados sin intervención manual.
+    \item [\textbf{RNF9.}] Sincronización de datos automática al restablecer conectividad.
+\end{enumerate}
+
+\subsection*{Criterios de aceptación.}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{4cm} p{8.5cm}}
+        \hline
+        \textbf{Criterio} & \textbf{Descripción} \\
+        \hline
+        Creación offline de orden & Orden creada sin red se sincroniza automáticamente al restablecer conectividad. \\
+        Recuperación tras desconexión & Cambios acumulados se reconcilian sin pérdida al reconectar. \\
+        Seguridad de roles & Acciones restringidas correctamente por perfil (verificado en pruebas). \\
+        Usabilidad piloto & Operarios completan flujo principal (asignación → ejecución → cierre) sin asistencia tras breve inducción. \\
+        Evidencias & Adjuntos disponibles en peer remoto tras sincronización exitosa. \\
+        Generación de informes & PDF generado refleja fielmente tareas y evidencias registradas. \\
+        \hline
+    \end{tabular}
+    \caption{Criterios de aceptación principales del sistema.}
+    \label{tab:criterios}
+\end{table}
+
+
+
+%----------TO-BE----------%
+\section*{Diseño de la solución (TO-BE)}
+\addcontentsline{toc}{section}{Diseño de la solución (TO-BE)}
+Digitalización integral y sincronización distribuida con resiliencia ante conectividad intermitente.
+
+\subsection*{Arquitectura de software.}
+Se opta por una arquitectura web modular basada en PWA, la definición de esta arquitectura responde a una restricción organizacional crítica identificada durante el levantamiento de requisitos: la gestión de TI de la compañía se encuentra centralizada en la casa matriz en Argentina, y la planta productiva en Chile carece de infraestructura de servidores locales y de personal de TI in-situ para el mantenimiento de nuevos servicios de backend.
+
+Esta limitación hacía inviable una arquitectura cliente-servidor tradicional, la cual habría generado una dependencia de soporte que el área de TI central no podía garantizar para un desarrollo específico de planta. Por consiguiente, se diseñó una solución descentralizada utilizando WebRTC para la sincronización P2P. Este enfoque traslada la carga de procesamiento y almacenamiento a los dispositivos de los usuarios (Edge Computing), eliminando la necesidad de desplegar y mantener un servidor central complejo. El sistema opera así de manera autónoma respecto a la infraestructura corporativa, utilizando servicios externos (como Firebase) únicamente para la señalización ligera, lo que asegura la sostenibilidad del proyecto sin requerir intervención constante del departamento de TI. Esta arquitectura cuenta con capas desacopladas para interfaz, persistencia local, sincronización P2P y procesamiento de documentos. La elección de tecnologías se fundamenta en criterios de madurez, compatibilidad y alineación con requerimientos funcionales y no funcionales.
+Capas: Frontend (React JS + Context, Tailwind), Persistencia local (Dexie/IndexedDB), Sincronización (WebRTC DataChannels), Señalización (Firebase RTDB), TURN (METERED) , Service Worker (cache, actualización gradual), Módulo para procesar PDFs, Módulo para generar PDFs, Módulo de versionado distribuido.
+
+\subsection*{Díagrama de la arquitectura del sistema.}
+\begin{figure}[H]
+    \centering
+    % Fuente Mermaid: díagramas/arquitectura.mmd
+    \includegraphicsIfExists[width=0.95\textwidth]{data/arquitectura.png}
+    \caption{Arquitectura lógica de la plataforma (TO-BE).}
+    \label{fig:arquitectura}
+\end{figure}
+
+\subsection*{Tecnologías seleccionadas y justificadas.}
+\begin{itemize}
+    \item React: Composición declarativa y ecosistema maduro para SPA/PWA.
+    \item IndexedDB + Dexie: Transacciones y migraciones versionadas para operación offline.
+    \item WebRTC: Canal P2P de baja latencia y cifrado automático (DTLS).
+    \item Firebase Realtime Database: Señalización ligera y medíación de sesiones, se usa como modulo, por lo que se puede cambiar por otro servicio similar en el futuro.
+    \item TURN (METERED): Soporte para conectividad en entornos restrictivos, se usa como modulo, por lo que se puede cambiar por otro servicio similar en el futuro.
+    \item Service Worker: Cacheo de assets críticos, soporte offline y actualización controlada.
+    \item pdfjs-dist: Parsing confiable de PDF industrial.
+    \item Estrategias de versionado / CRDT simplificado (LWW map) para potencial escalamiento de resolución de conflictos.
+\end{itemize}
+
+\subsection*{Flujo TO-BE (visión general).}
+\begin{enumerate}
+    \item Encargado sube pautas en PDF, el sistema extrae información y genera datos estructurados.
+    \item Sistema asigna órdenes automáticamente a supervisores según especialidad.
+    \item Supervisor asigna orden digitalmente a mantenedor.
+    \item Orden se almacena localmente y se replica en peers medíante versión incrementada.
+    \item Sistema busca al mantenedor asignado y sincroniza orden cuando este disponible.
+    \item Mantenedor ejecuta tareas, adjunta evidencias en campo.
+    \item Cambios se acumulan localmente y se sincronizan al detectar peers disponibles.
+    \item Cierre de orden verifica checklist y firmas digitales.
+    \item Cuando un mantenedor y supervisor está disponible, se sincronizan los cambios automáticamente.
+    \item Supervisor revisa y consolida órdenes digitalmente.
+    \item Cuando un supervisor y encargado están disponibles, se sincronizan los cambios automáticamente.
+    \item Encargado exporta órdenes completadas a PDF con evidencias adjuntas.
+    \item órdenes completadas se registran en JD Edwards (proceso manual externo).
+    \item Si una orden no es completada, se mantiene en el sistema hasta su finalización, sin riesgo de pérdida física.
+    \item Métricas y estados quedan disponibles para analítica histórica y toma de decisiones cuando se acumulen suficientes datos.
+\end{enumerate}
+
+\subsection*{Cómo cambia el proceso para el usuario.}
+\begin{itemize}
+    \item Eliminación de distribución física: asignación inmedíata en interfaz.
+    \item Registro directo de evidencias sin transcripción posterior.
+    \item Visibilidad instantánea del avance y bloqueos.
+    \item Reducción de pérdida de información (persistencia redundante). 
+    \item Acceso offline garantizado.
+    \item Flujo de trabajo guiado y validaciones automáticas.
+    \item Generación automática de informes digitales.
+    \item Trazabilidad completa y analítica histórica.
+    \item Reducción de tiempos muertos y retrabajos.
+    \item Mejora en la coordinación entre roles.
+    \item Evita la perdida de órdenes reprogramadas.
+    \item Minimiza errores de transcripción y duplicación de datos.
+    \item Disminuye la carga administrativa del encargado de JD Edwards.
+    \item Disminuye la dependencia de roles clave (encargado de JD Edwards).
+\end{itemize}
+
+\subsection*{Díagrama de flujo TO-BE.}
+\begin{figure}[H]
+    \centering
+    \includegraphicsIfExists[width=1\textwidth]{data/flujo_to_be.png}
+    \caption{Flujo operativo digitalizado (TO-BE).}
+    \label{fig:TOBE}
+\end{figure}
+
+\subsection*{Díagrama de comparación de flujos.}
+\begin{figure}[H]
+    \centering
+    \includegraphicsIfExists[width=1\textwidth]{data/comparacion.png}
+    \caption{Flujo comparativo.}
+    \label{fig:Comparacion}
+\end{figure}
+\newpage
+\section*{Evaluación de usabilidad (piloto)}
+\addcontentsline{toc}{section}{Evaluación de usabilidad (piloto)}
+
+Se planifica prueba con muestra reducida (1 supervisor, 2 mantenedores) por especialidad. Métricas: tiempo de aprendizaje, errores de navegación, retroalimentación cualitativa (claridad de estados y legibilidad en dispositivo móvil). Resultados preliminares se integrarán para ajustes ergonómicos y priorización de mejoras (por ejemplo, agrupación de tareas y visibilidad de anexos).
+
+\section*{Riesgos y mitigación}
+\addcontentsline{toc}{section}{Riesgos y mitigación}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{4cm} p{8.5cm}}
+    \hline
+    \textbf{Riesgo} & \textbf{Mitigación} \\
+    \hline
+        Conectividad intermitente & Cache local + reintentos exponenciales + sincronización diferida por lotes. \\
+        Pérdida de nodos & Replicación redundante (malla controlada y snapshots periódicos). \\
+        Fallas de sincronización & Logs detallados + política de reconciliación determinista basada en versión. \\
+        Escalamiento de peers & Introducción futura de super-peers para agregación y difusión eficiente. \\
+        Inconsistencias en parse PDF & Validaciones de estructura y registro de errores para reprocesos. \\
+        Seguridad de acceso & Control de roles, invalidación de sesiones y cifrado en tránsito. \\
+        Saturación de CPU en malla & Batching de actualizaciones y límites de peers simultáneos activos. \\
+        \hline
+    \end{tabular}
+    \caption{Matriz de riesgos y estrategias de mitigación.}
+    \label{tab:riesgos}
+\end{table}
+
+\section*{Resumen metodológico}
+\addcontentsline{toc}{section}{Resumen metodológico}
+Consolidación de fases y entregables para trazabilidad del avance y control de objetivos.
+
+\subsection*{Tabla cronológica de actividades.}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{3.5cm} p{3.5cm} p{8cm}}
+        \hline
+        \textbf{Fase} & \textbf{Periodo (estimado)} & \textbf{Entregables clave} \\
+        \hline
+        Levantamiento & Semana 1 & Informe AS-IS, métricas preliminares. \\
+        Requisitos & Semana 1--2 & Matriz RF/RNF, criterios de aceptación. \\
+        Diseño & Semana 2--3 & díagramas arquitectura, flujo TO-BE. \\
+        Construcción MVP & Semana 3--6 & Módulos básicos (auth, órdenes, PDF, P2P). \\
+        Presentacion intermedía & Semana 6 & Demo funcional, feedback inicial. \\
+        Ajustes iterativos & Semana 6--7 & Mejoras UI, optimización sincronización. \\
+        Evaluación piloto & Semana 8--9 & Métricas latencia, usabilidad inicial. \\
+        Optimización & Semana 10 & Refactor sincronización, mejoras UI. \\
+        Presentación intermedía 2 & Semana 10 & Demo mejorada, feedback avanzado. \\
+        Ajustes finales & Semana 11 & Correcciones según feedback, estabilidad. \\
+        Validación final & Semana 12 & Informe final, métricas consolidadas. \\
+        \hline
+    \end{tabular}
+    \caption{Cronograma de fases metodológicas.}
+    \label{tab:cronograma}
+\end{table}
+
+\subsection*{Resumen carta Gantt.}
+\begin{figure}[h]
+    \centering
+    % Fuente Mermaid: díagramas/gantt_resumen.mmd
+    \includegraphicsIfExists[width=1\textwidth]{data/gantt_resumen.png}
+    \caption{Vista resumida de la planificación temporal (Gantt).}
+    \label{fig:Gantt}
+\end{figure}
+
 
 \chapter*{Resultados}
+\addcontentsline{toc}{chapter}{Resultados}
+
+\section*{Resumen}
+\addcontentsline{toc}{section}{Resumen}
+\begin{itemize}
+    \item Alcance logrado del MVP y entregables principales.
+    \item Principales mejoras observadas respecto del AS-IS (tiempos, pérdidas, trazabilidad).
+    \item Riesgos críticos mitigados y aquellos que quedan abiertos con plan de tratamiento.
+    \item Próximos pasos sugeridos para consolidación y escalamiento.
+\end{itemize}
+
+\section*{Indicadores cuantitativos}
+\addcontentsline{toc}{section}{Indicadores cuantitativos}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{5cm} p{3cm} p{3cm} p{5cm}}
+        \hline
+        \textbf{Indicador} & \textbf{Resultado} & \textbf{Nota / Criterio} \\
+        \hline
+        Latencia media entre Peers (ms) sin Relay& $\leq$ 20 ms & Objetivo: $\leq$ 100 ms. \\
+        Latencia media entre Peers (ms) con Relay & $\leq$ 300 ms& Objetivo: $\leq$ 350 ms. \\
+        Éxito de operaciones offline (\%)  & $=$ 100\% & Objetivo: $\geq$ 99\%. \\
+        Tasa de conflictos por 100 syncs & 0 & Objetivo: $\leq$ 3 con resolución automática LWW. \\
+        Tiempo medio de parse de una pauta PDF (s) & $\leq$ 9 s para 400 pautas & Objetivo: $\leq$ 17 s para 300 órdenes de mantenimiento. \\
+        Peso inicial de la PWA (KB) & 829 kb & Objetivo: $\leq$ 900 KB. \\
+        Tiempo de arranque en frío / caliente (s) & -- & Objetivo: $\leq$ 3 s / $\leq$ 1 s. \\
+        \hline
+    \end{tabular}
+    \caption{Indicadores cuantitativos del sistema.}
+    \label{tab:resultados-metricas}
+\end{table}
+
+\section*{Resultados por m\'odulo}
+\addcontentsline{toc}{section}{Resultados por m\'odulo}
+\subsection*{Autenticaci\'on y control de roles (RBAC).}
+\begin{itemize}
+    \item Criterio: acceso por perfil (Administrador, Supervisor, Mantenedor).
+    \item Resultado: cada usuario accede solo a funciones y datos permitidos, validado en pruebas.
+\end{itemize}
+
+\subsection*{Órdenes y checklist.}
+\begin{itemize}
+    \item Criterio: creaci\'on, asignaci\'on, ejecuci\'on y cierre con firma.
+    \item Resultado: mantenedores de distintas especialidades, capacidades y edades ejecutan y cierran órdenes correctamente.
+    \item Futuras mejoras: se solicito la agregacion de una firma digital manuscrita para el cierre de órdenes, la cual sera implementada en futuras versiones medíante un canvas HTML5, la firma sera almacenada como un vector que se asociara al perfil de cada usuario.
+    \item Problemas: Algunos usuarios no finalizaron correctamente las órdenes, debido a 2 problemas detectados, la falta de experiencia con dispositivos m\'oviles, lo cual se espera mejorar con capacitaciones, y eventos inesperados de naturaleza propia del trabajo de mantenimiento (interrupciones, reasignaciones).
+\end{itemize}
+
+\subsection*{Procesamiento de PDF (parse y generaci\'on).}
+\begin{itemize}
+    \item Criterio: extracci\'on de campos clave desde órdenes de mantenimiento JD Edwards.
+    \item Resultado: la extracci\'on de datos fue exitosa en el 100\% de las órdenes de mantenimiento, adem\'as, se generaron los PDFs de las órdenes completadas con las evidencias adjuntas correctamente.
+    \item Problemas: se detectaron errores procedentes de la creacion de órdenes de mantenimiento en JD Edwards, los cuales fueron reportados al encargado de JD Edwards para su correcci\'on.
+\end{itemize}
+
+\subsection*{Persistencia local.}
+\begin{itemize}
+    \item Criterio: operaci\'on offline completa con Dexie/IndexedDB.
+    \item Resultado: ejecuci\'on de tareas sin conectividad y recuperaci\'on posterior.
+\end{itemize}
+
+\subsection*{Sincronizaci\'on P2P (WebRTC).}
+\begin{itemize}
+    \item Criterio: replicaci\'on eventual garantizada y resoluci\'on determinista de conflictos.
+    \item Resultado: latencias bajas y sin p\'erdida de datos en pruebas controladas, conflictos resueltos autom\'aticamente.
+    \item Problemas: en ambientes con restricciones de red severas, la conexi\'on directa P2P no fue posible, requiriendo el uso de servidores TURN, lo cual incrementa la latencia y posibles costos operativos los cuales dependen de la cantidad de datos transferidos, sin embargo, en esta implementación se utilizo un servicio TURN de bajo costo y medido (METERED) para mitigar este riesgo, el cual da 20 GB gratuitos al mes.
+\end{itemize}
+
+\subsection*{Interfaz y experiencia de usuario.}
+\begin{itemize}
+    \item Criterio: flujo principal end-to-end completado en m\'ovil y escritorio.
+    \item Resultado: usuarios completan tareas clave tras breve inducci\'on, feedback positivo en claridad y legibilidad.
+    \item Comentarios: Los usuarios solicitaron especificamente una funcion de accesibilidad, el poder realizar zoom en la plataforma, esta funcion ya esta implementada en la version actual. Todos los usuarios que utilizaron la aplicación muestran su preferencia frente al papel impreso.
+\end{itemize}
+
+\subsection*{Seguridad.}
+\begin{itemize}
+    \item Criterio: aislamiento por roles, sesi\'on y cifrado en tr\'ansito.
+    \item Resultado: pruebas de acceso restringido exitosas, canales WebRTC cifrados autom\'aticamente y claves de acceso cifradas en IndexedDB.
+\end{itemize}
+
+\section*{Usabilidad (piloto)}
+\addcontentsline{toc}{section}{Usabilidad (piloto)}
+\begin{itemize}
+    \item Poblaci\'on y escenario: 1 supervisores y 2 mantenedores (por especialidad), tareas t\'ipicas.
+    \item Instrumentos: observaci\'on directa, revision de logs, cuestionario SUS post-uso.
+    \item M\'etricas: tasa de completaci\'on, tiempo medio por tárea, errores por sesi\'on, SUS.
+    \item Resultados: ver Tabla \ref{tab:resultados-usabilidad}.
+    \item Comentarios cualitativos: interfaz intuitiva, claridad en estados, sugerencias para agrupar tareas y mejorar visibilidad de anexos.
+\end{itemize}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{6cm} p{4cm} p{5.5cm}}
+        \hline
+        \textbf{M\'etrica} & \textbf{Resultado} & \textbf{Observaciones} \\
+        \hline
+        Tasa de completaci\'on de tareas (\%) & 90\% & Flujo asignaci\'on \textrightarrow ejecuci\'on \textrightarrow cierre. \\
+        Tiempo medio para comprender una tárea(s) & 2-5 s & Incluye b\'usqueda, lectura y registro. \\
+        Errores por sesi\'on & 10\% & Navegaci\'on y validaciones. \\
+        SUS (0--100) & -- & Valor $\geq$ 68 considerado aceptable. \\
+        \hline
+    \end{tabular}
+    \caption{Resumen de usabilidad del piloto.}
+    \label{tab:resultados-usabilidad}
+\end{table}
 
 
+
+\section*{Estabilidad y rendimiento}
+\addcontentsline{toc}{section}{Estabilidad y rendimiento}
+\begin{itemize}
+    \item Pruebas de desconexi\'on/reconexi\'on: continuidad operativa y reconciliaci\'on.
+    \item Consumo de CPU/memoria en tareas cr\'iticas (parse PDF, sincronizaci\'on intensiva).
+    \item Efecto del batching de sincronizaci\'on y l\'imites de peers simult\'aneos.
+\end{itemize}
+
+\section*{Comparativa AS-IS vs TO-BE}
+\addcontentsline{toc}{section}{Comparativa AS-IS vs TO-BE}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{5cm} p{5.5cm} p{5.5cm}}
+        \hline
+        \textbf{Dimensi\'on} & \textbf{AS-IS} & \textbf{TO-BE} \\
+        \hline
+        Distribuci\'on de órdenes & Impresi\'on y reparto manual & Asignaci\'on digital inmedíata \\
+        Trazabilidad & Parcial / fragmentada & Completa, con estados y evidencias \\
+        Operaci\'on sin conectividad & No soportada & Offline con sincronizaci\'on diferida \\
+        Tiempo de traspaso de informaci\'on & 60--120 min & \textless 5 min (replicaci\'on P2P) \\
+        P\'erdida de registros & 5--10\% mensual & Tendencia a 0\% (redundancia) \\
+        Visibilidad de avance & Diferida & En tiempo casi real \\
+        \hline
+    \end{tabular}
+    \caption{Comparaci\'on sint\'etica entre proceso actual (AS-IS) y dise\~no propuesto (TO-BE).}
+    \label{tab:comparativa-asis-tobe}
+\end{table}
+
+\section*{Comparativa con Soluciones de Mercado}
+\addcontentsline{toc}{section}{Comparativa con Soluciones de Mercado}
+
+Para validar la pertinencia de la solución desarrollada frente a alternativas comerciales estándar (como SAP PM o Fiix), se realizó un análisis comparativo considerando las restricciones críticas de CARTOCOR: presupuesto limitado y conectividad deficiente.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{3.5cm} p{3.5cm} p{3.5cm} p{3.5cm}}
+        \hline
+        \textbf{Dimensión} & \textbf{SAP PM} & \textbf{Fiix (SaaS)} & \textbf{Propuesta (PWA P2P)} \\
+        \hline
+        \textbf{Modelo de Costo} & Alto CAPEX y OPEX (Licencias + Servidores) & Suscripción mensual por usuario (Gasto recurrente) & \textbf{Bajo Costo} (Sin licencias, uso de infraestructura existente) \\
+        \hline
+        \textbf{Infraestructura requerida} & Servidores dedicados y personal TI local & Conexión a Internet permanente & \textbf{Ninguna} (Serverless / Edge Computing) \\
+        \hline
+        \textbf{Dependencia de Red} & Alta (Cliente-Servidor) & Alta (Cloud-first) & \textbf{Nula} (Offline-first + Sincronización P2P) \\
+        \hline
+        \textbf{Adaptabilidad} & Rígida (Procesos estándar) & Configurable & \textbf{Total} (A medida de los procesos de planta) \\
+        \hline
+    \end{tabular}
+    \caption{Comparación entre soluciones de mercado y la plataforma desarrollada.}
+    \label{tab:comparativa-mercado}
+\end{table}
+
+Como se observa en la Tabla \ref{tab:comparativa-mercado}, aunque las soluciones comerciales ofrecen mayor cantidad de funcionalidades, fallan en cumplir con los requisitos excluyentes de la empresa: operar sin costo de licencias y sin dependencia de infraestructura de red. La solución PWA P2P se posiciona como la única alternativa viable que digitaliza el proceso sin transformar el mantenimiento en un centro de costos de software insostenible para la gerencia.
+\newpage
+
+\section*{Incidentes y resoluci\'on de conflictos}
+\addcontentsline{toc}{section}{Incidentes y resoluci\'on de conflictos}
+\begin{itemize}
+    \item Casos detectados de ediciones concurrentes y pol\'itica aplicada (LWW / versi\'on mayor).
+    \item Incidencias relevantes (parse fallido, reconexi\'on) y remedíaci\'on.
+\end{itemize}
+
+\section*{Limitaciones y amenazas a la validez}
+\addcontentsline{toc}{section}{Limitaciones y amenazas a la validez}
+\begin{itemize}
+    \item Tama\~no de muestra del piloto y sesgos potenciales.
+    \item Cobertura de escenarios (especialidades, tipos de órdenes, ambientes de red).
+    \item Restricciones tecnol\'ogicas (TURN, dispositivos heterog\'eneos, permisos).
+\end{itemize}
+
+\section*{Estado de riesgos y mitigaci\'on}
+\addcontentsline{toc}{section}{Estado de riesgos y mitigaci\'on}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{p{5cm} p{3cm} p{7cm}}
+        \hline
+        \textbf{Riesgo} & \textbf{Estado} & \textbf{Evidencia / Comentario} \\
+        \hline
+        Conectividad intermitente & Mitigado & Reintentos y sincronizaci\'on diferida verificada. \\
+        Conflictos de datos & Parcial & Casos residuales con reglas deterministas. \\
+        Saturaci\'on de malla P2P & Parcial & Se implementa una coneccion jerarquica, para el tamaño actual de la planta no representa problema, pero si la misma red se quisiera usar para todas las plantas de la organización, entonces podria representar un problema. \\
+        Seguridad de acceso & Mitigado & Revisiones iniciales, pendiente endurecimiento. \\
+        \hline
+    \end{tabular}
+    \caption{Seguimiento del estado de riesgos definidos y su mitigaci\'on.}
+    \label{tab:riesgos-estado}
+\end{table}
+
+\section*{Lecciones aprendidas y pr\'oximos pasos}
+\addcontentsline{toc}{section}{Lecciones aprendidas y pr\'oximos pasos}
+\begin{itemize}
+    \item Lecciones aprendidas: importancia de pruebas en entornos reales, manejo de expectativas de usuarios, balance entre complejidad y usabilidad, planificaci\'on de mitigaci\'on de riesgos t\'ecnicos, poner al usuario en el centro del dise\~no.
+    \item Oportunidades de mejora a corto plazo: agregar más especialidades, implementacion de una red no restrictiva para los dispositivos moviles, mejoras en la experiencia de usuario.
+    \item Plan de continuidad, la empresa opta por aumentar el piloto a más mantenedores, por lo que estan en proceso de comprar más dispositivos moviles para que los mantenedores puedan usar la aplicación.
+    \item Escalamiento potencial (super-peers, anal\'itica avanzada, integraci\'on con sistemas corporativos).
+    \item Investigaci\'on futura: cruzar datos de indisponibilidad de m\'aquinas con mantenciónes realizadas para busqueda de patrones y optimizaci\'on predictiva.
+\end{itemize}
 \chapter*{Conclusiones}
+\addcontentsline{toc}{chapter}{Conclusiones}
+
+La presente memoria abordó un problema operacional real en el área de mantenimiento de CARTOCOR: la dependencia de procesos manuales en papel, la débil trazabilidad y la falta de visibilidad en tiempo casi real del avance de las órdenes. Frente a ello, se diseñó y construyó un artefacto tecnológico basado en una Plataforma Web Progresiva (PWA) con operación offline y sincronización distribuida P2P sobre WebRTC, siguiendo el enfoque de Design Science Research. El objetivo general —digitalizar procedimientos y optimizar la planificación, asignación, ejecución, seguimiento y trazabilidad— fue alcanzado a través de una arquitectura modular que integra: persistencia local (IndexedDB/Dexie), canales de datos P2P (WebRTC) con señalización en Firebase, control de acceso por roles (RBAC), parsing de pautas PDF y generación de informes digitales.
+
+Los resultados empíricos obtenidos en pruebas controladas y en un piloto acotado con supervisores y mantenedores sustentan la validez del enfoque. En términos de desempeño, se observaron latencias medías entre pares en el rango de decenas de milisegundos sin relé (≤ 20 ms) y dentro de los márgenes aceptables con relé (≤ 300 ms); la operación offline logró sincronización posterior sin pérdida de datos (100\% de éxito en las corridas ensayadas); no se registraron conflictos no resueltos bajo la política determinista definida; y el tiempo medio de parseo masivo de pautas PDF fue compatible con la escala objetivo (≈ 9 s para 400 pautas). Además, el peso inicial de la PWA (≈ 829 KB) se mantuvo dentro del objetivo, favoreciendo despliegues ágiles en dispositivos heterogéneos. Estos indicadores, en conjunto con la evidencia cualitativa de usabilidad, demuestran que la solución mejora de forma tangible el proceso AS-IS: reduce tiempos de traspaso de información, incrementa la visibilidad del avance y disminuye el riesgo de pérdida de registros.
+
+Desde la perspectiva organizacional, la plataforma transforma la distribución de órdenes (de un flujo manual y asincrónico a uno digital e inmedíato), habilita evidencia trazable en el punto de ejecución y consolida estados históricos útiles para la toma de decisiones. La coordinación entre roles se beneficia de la replicación eventual P2P y del soporte offline, cualidades críticas en ambientes industriales con conectividad intermitente. En este sentido, el diseño aporta resiliencia operativa al distribuir la responsabilidad de sincronización entre los propios dispositivos de la planta, minimizando dependencias de un punto único de falla.
+
+Como contribuciones técnicas y metodológicas, este trabajo ofrece: (i) una arquitectura de referencia para PWA industriales con sincronización P2P y consistencia eventual, (ii) un pipeline reproducible para extracción/generación de documentos PDF en contexto de mantenimiento, (iii) un esquema de versionado y reconciliación determinista adaptado a escenarios de colaboración asíncrona y (iv) un conjunto de métricas operativas para evaluar desempeño, estabilidad y usabilidad en escenarios offline/online intermitentes. Estas contribuciones son transferibles a otros dominios con requisitos similares de resiliencia, trazabilidad y operación en borde.
+
+Se reconocen, no obstante, limitaciones que abren líneas de mejora: el piloto contó con una muestra reducida y escenarios controlados, por lo que conviene ampliar su alcance para fortalecer la validez externa; en redes corporativas restrictivas la necesidad de TURN eleva latencias y costos operativos, lo que sugiere explorar super-peers y topologías jerárquicas para escalar sin degradación; persisten tareas de endurecimiento de seguridad y gobierno de datos (por ejemplo, gestión de dispositivos y políticas de rotación de credenciales); y la integración directa con sistemas ERP (como JD Edwards) quedó fuera del alcance, aunque la arquitectura la fácilita.
+
+Como trabajo futuro se propone: (a) ampliar el piloto y formalizar mediciones de usabilidad (SUS) y tiempos de arranque frío/caliente, (b) incorporar firmas manuscritas digitales vectoriales y mejoras de accesibilidad demandadas por usuarios, (c) evolucionar hacia una replicación jerárquica con super-peers y snapshots agregados para múltiples plantas, (d) integrar analítica avanzada que cruce indisponibilidad de máquinas con mantenimiento ejecutado para soporte predictivo, y (e) avanzar en la integración operativa con ERP, automatizando el cierre contable/administrativo de órdenes.
+
+En síntesis, la solución desarrollada demuestra la factibilidad y conveniencia de adoptar una PWA con sincronización P2P para digitalizar y trazar órdenes de mantenimiento en entornos industriales reales. La evidencia técnica y de uso recolectada indica una mejora sustantiva respecto del proceso actual, habilitando continuidad operativa, reducción de pérdidas de información y soporte a la toma de decisiones. Se recomienda su despliegue progresivo y la ejecución del plan de mejoras propuesto para consolidar beneficios y maximizar su impacto a escala organizacional.
 
 
 \appendix
 \chapter*{Apéndice}
 \addcontentsline{toc}{chapter}{Apéndice}
+\section*{Codigo fuente}
+\addcontentsline{toc}{section}{Codigo fuente}
+El código fuente del proyecto está disponible en el siguiente repositorio de GitHub:
+\begin{itemize}
+    \item \url{https://github.com/YISR-UOH/WatchTaskV2}
+\end{itemize}
 \section*{Implementación de Plataforma}
-\subsection*{Mantenedor}
-\begin{figure}[h]
+\addcontentsline{toc}{section}{Implementación de Plataforma}
+\subsection*{Mantenedor.}
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{data/Mantenedor_HOME_task.png}
     \caption[\,Mantenedor: Vista inicial (tareas)]{Interfaz de usuario con perfil Mantenedor, Vista Inicial, segmento de tareas expandido.}
     \label{fig:[Mantenedor_HOME_task]}
 \end{figure}
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{data/Mantenedor_HOME_anexo.png}
     \caption[\,Mantenedor: Vista inicial (anexos)]{Interfaz de usuario con perfil Mantenedor, Vista Inicial, segmento de anexos expandido.}
     \label{fig:[Mantenedor_HOME_anexo]}
 \end{figure}
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{data/Mantenedor_Orden.png}
     \caption[\,Mantenedor: Vista de Orden]{Interfaz de usuario con perfil Mantenedor, Vista de Orden de Mantenimiento.}
     \label{fig:[Mantenedor_Orden]}
 \end{figure}
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{data/Mantenedor_Task.png}
-    \caption[\,Mantenedor: Vista de Tarea]{Interfaz de usuario con perfil Mantenedor, Vista de Tarea especifica de una orden.}
+    \caption[\,Mantenedor: Vista de Tárea]{Interfaz de usuario con perfil Mantenedor, Vista de Tárea especifica de una orden.}
     \label{fig:[Mantenedor_Task]}
 \end{figure}
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{data/Mantenedor_Checklist.png}
     \caption[\,Mantenedor: Checklist de término]{Interfaz de usuario con perfil Mantenedor, Vista de CheckList de termino de orden de mantenimiento.}
-    \label{fig:[Mantenedor_ChechList]}
+    \label{fig:[Mantenedor_CheckList]}
 \end{figure}
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{data/Debug_Panel.png}
     \caption[\,Panel de depuración P2P]{Panel para revisar estado de conexiones entre peers, latencia, estado de red y persistencia de datos.}
     \label{fig:[Debug_Panel]}
 \end{figure}
+\newpage
+\subsection*{Supervisor.}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/supervisor_asignar.png}
+    \caption[\,Supervisor: Vista de asignacion]{Interfaz de usuario con perfil Supervisor, Vista asignacion de órdenes de mantenimiento.}
+    \label{fig:[Supervisor_HOME]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/supervisor_reasignar.png}
+    \caption[\,Supervisor: Vista de reasignacion]{Interfaz de usuario con perfil Supervisor, Vista reasignacion de órdenes de mantenimiento.}
+    \label{fig:[Supervisor_reasignar]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/supervisor_review.png}
+    \caption[\,Supervisor: Vista de revisión]{Interfaz de usuario con perfil Supervisor, Vista de revisión de órdenes de mantenimiento completadas.}
+    \label{fig:[Supervisor_review]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/supervisor_review2.png}
+    \caption[\,Supervisor: Vista de revisión]{Interfaz de usuario con perfil Supervisor, Vista de revisión de órdenes de mantenimiento completadas.}
+    \label{fig:[Supervisor_review2]}
+\end{figure}
 
 
+\newpage
+\subsection*{Encargado JD Edwards/Administrador.}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/admin_profile.png}
+    \caption[\,Administrador: Vista de perfiles]{Interfaz de usuario con perfil Administrador, Vista de de CRUD.}
+    \label{fig:[admin_profile]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/admin_review.png}
+    \caption[\,Administrador: Vista de revisión]{Interfaz de usuario con perfil Administrador, Vista de revisión de órdenes de mantenimiento completadas.}
+    \label{fig:[admin_review]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/admin_review2.png}
+    \caption[\,Administrador: Vista de revisión]{Interfaz de usuario con perfil Administrador, Vista de revisión de órdenes de mantenimiento completadas.}
+    \label{fig:[admin_review2]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/admin_pdf.png}
+    \caption[\,Administrador: Vista de PDF generado]{Interfaz de usuario con perfil Administrador, Vista de PDF generado de orden de mantenimiento completada.}
+    \label{fig:[admin_pdf]}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{data/admin_pdf2.png}
+    \caption[\,Administrador: Vista de PDF generado]{Interfaz de usuario con perfil Administrador, Vista de PDF generado de orden de mantenimiento completada.}
+    \label{fig:[admin_pdf2]}
+\end{figure}
 
 \chapter*{Glosario de Términos}
 \addcontentsline{toc}{chapter}{Glosario de Términos}
 \begin{itemize}
-    \item BSON: Binary JSON, un formato de serialización de datos que extiende JSON para incluir tipos de datos adicionales y es utilizado por MongoDB para almacenar documentos.
-    \item Responsive: Diseño web que permite que las aplicaciones se adapten a diferentes tamaños de pantalla y dispositivos, proporcionando una experiencia de usuario óptima en móviles, tablets y desktops .
+    \item \textbf{Backoff exponencial}: Estrategia de reintentos donde el tiempo de espera crece exponencialmente para evitar congestión.
+    \item \textbf{Batching}: Agrupación de múltiples cambios en lotes para reducir sobrecarga de sincronización y mejorar performance.
+    \item \textbf{Consistencia eventual}: Modelo en el que, en ausencia de nuevas actualizaciones, todas las réplicas convergen al mismo estado con el tiempo.
+    \item \textbf{CRDT (LWW Map)}: Estructura de datos replicada sin conflictos; la variante \textit{Last-Writer-Wins} resuelve colisiones por marca temporal/versión.
+    \item \textbf{DataChannel}: Canal de datos de WebRTC (SCTP sobre DTLS) que permite enviar mensajes confiables/no confiables y ordenados/no ordenados.
+    \item \textbf{Dexie}: Librería que simplifica el uso de IndexedDB, aportando esquemas versionados, migraciones y notificaciones.
+    \item \textbf{DSR (Design Science Research)}: Metodología de investigación aplicada centrada en el diseño, construcción y evaluación de artefactos.
+    \item \textbf{DTLS}: Variante de TLS sobre UDP usada por WebRTC para cifrar canales de medios y datos.
+    \item \textbf{Firebase Realtime Database}: Servicio en la nube usado aquí como capa de señalización ligera para intercambiar metadatos de sesión.
+    \item \textbf{ICE (Interactive Connectivity Establishment)}: Proceso para descubrir y probar rutas de conectividad entre pares usando candidatos host, STUN y TURN.
+    \item \textbf{IndexedDB}: Base de datos transaccional del navegador para almacenamiento estructurado y offline.
+    \item \textbf{JD Edwards (ERP)}: Sistema empresarial externo desde el cual se originan las órdenes de mantenimiento y al que se reporta su cierre.
+    \item \textbf{MTBF/MTTR/OEE}: Indicadores clave de confiabilidad y desempeño: tiempo medio entre fallas, tiempo medio de reparación y efectividad global del equipo.
+    \item \textbf{NAT}: Traducción de direcciones de red; puede impedir conectividad directa P2P y requerir TURN.
+    \item \textbf{Offline-first}: Enfoque que prioriza que la aplicación funcione sin conectividad, sincronizando cuando la red esté disponible.
+    \item \textbf{pdfjs-dist}: Biblioteca utilizada para parsear (extraer) e interpretar contenido de archivos PDF en el navegador.
+    \item \textbf{PWA (Aplicación Web Progresiva)}: Tipo de aplicación web que ofrece capacidades similares a nativas (offline, instalación, notificaciones) medíante \textit{Service Workers} y \textit{Web App Manifest}.
+    \item \textbf{RBAC (Control de Acceso Basado en Roles)}: Modelo que restringe permisos según perfiles (Administrador, Supervisor, Mantenedor).
+    \item \textbf{RCM (Mantenimiento Centrado en Confiabilidad)}: Metodología para priorizar intervenciones de mantenimiento según criticidad y riesgo.
+    \item \textbf{Responsive}: Diseño que adapta la interfaz a distintos tamaños de pantalla y dispositivos manteniendo usabilidad.
+    \item \textbf{SCTP}: Protocolo de transporte confiable usado por los DataChannels de WebRTC.
+    \item \textbf{SDP (Session Description Protocol)}: Formato utilizado para describir parámetros de una sesión WebRTC en la negociación oferta/respuesta.
+    \item \textbf{Señalización (Signaling)}: Intercambio de ofertas/respuestas SDP y candidatos ICE entre pares para establecer un canal WebRTC.
+    \item \textbf{Service Worker}: Script que corre en segundo plano en el navegador; permite cachear recursos, interceptar peticiones y habilitar operación offline.
+    \item \textbf{Snapshot}: Captura compacta del estado (usuarios/órdenes) usada para sincronización y recuperación rápida entre pares.
+    \item \textbf{SPA (Single Page Application)}: Aplicación de una sola página; el enrutado y la actualización de vistas se gestionan en el cliente, como en React.
+    \item \textbf{STUN}: Servicio que informa la dirección pública del cliente detrás de NAT para fácilitar conectividad directa P2P.
+    \item \textbf{Super-peer}: Nodo con mayores capacidades que puede agregar y redistribuir estados para escalar topologías P2P.
+    \item \textbf{SUS (System Usability Scale)}: Escala estandarizada para medir percepción de usabilidad de un sistema por parte de usuarios.
+    \item \textbf{TPM (Total Productive Maintenance)}: Enfoque integral de mantenimiento que involucra a toda la organización para maximizar disponibilidad.
+    \item \textbf{TURN}: Servicio de retransmisión cuando la conectividad directa falla; aumenta latencia y costo, pero garantiza comunicación.
+    \item \textbf{Versionado distribuido}: Estrategia que usa números de versión monótonos y marcas lógicas para ordenar y reconciliar cambios entre réplicas.
+    \item \textbf{Web App Manifest}: Archivo JSON que define metadatos de la PWA (nombre, iconos, pantalla de inicio) y habilita la instalación.
+    \item \textbf{WebRTC}: Conjunto de APIs para comunicación en tiempo real entre navegadores (medios y datos) con cifrado extremo a extremo.
 \end{itemize}
 
 

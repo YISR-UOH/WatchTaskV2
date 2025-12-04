@@ -3,8 +3,8 @@
  * Renderiza la vista previa generando un blob embebido en el sitio.
  */
 import React, { useEffect, useMemo, useState } from "react";
-import { Page, Text, View, Document, pdf, Font } from "@react-pdf/renderer";
-import { listOrders } from "@/utils/APIdb";
+import { Page, Text, View, Document, pdf, Font, Image } from "@react-pdf/renderer";
+import { listOrders, listUsers } from "@/utils/APIdb";
 import LoraRegular from "@/fonts/Lora.ttf";
 import LoraItalic from "@/fonts/Lora-Italic.ttf";
 import { createTw } from "react-pdf-tailwind";
@@ -60,6 +60,30 @@ const SERVICES = {
   EXP: "EXPEDICION",
   TM: "TALLER",
   EDI: "EDIFICIO",
+};
+
+const sanitizeIsoOffset = (value) => {
+  if (typeof value !== "string") return value;
+  return value.replace(
+    /([+-])(\d{2}):(\d{1,2})(\.[0-9]+)/g,
+    (_, sign, hourPart, minutePart, fractional) => {
+      const minutesNumber = Number(`${minutePart}${fractional}`);
+      const sanitizedMinutes = Number.isFinite(minutesNumber)
+        ? Math.max(0, Math.min(59, Math.round(minutesNumber)))
+        : Math.max(0, Math.min(59, Number.parseInt(minutePart, 10) || 0));
+      return `${sign}${hourPart}:${String(sanitizedMinutes).padStart(2, "0")}`;
+    }
+  );
+};
+
+const formatFallbackDate = (value) => {
+  if (!value) return "";
+  const datePart = String(value).split(/[ T]/)[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    const [year, month, day] = datePart.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  return value;
 };
 
 function normalizeCode(value) {
@@ -132,6 +156,7 @@ export default function OrderPDF() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [isRendering, setIsRendering] = useState(false);
   const [renderError, setRenderError] = useState("");
+  const [supervisorSignatures, setSupervisorSignatures] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -161,6 +186,32 @@ export default function OrderPDF() {
         }
       });
 
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    listUsers()
+      .then((users) => {
+        if (cancelled) return;
+        const map = {};
+        if (Array.isArray(users)) {
+          users.forEach((user) => {
+            const code = Number(user?.code);
+            if (Number.isFinite(code) && user?.signature) {
+              map[code] = user.signature;
+            }
+          });
+        }
+        setSupervisorSignatures(map);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSupervisorSignatures({});
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -259,6 +310,7 @@ export default function OrderPDF() {
           const codeMatch = normalizeCode(order?.code).toLowerCase();
           const descriptionMatch = getDescription(info).toLowerCase();
           const unitMatch = getUnitLabel(info).toLowerCase();
+          const kitMatch = normalizeCode(info?.["Kit de Tareas"]).toLowerCase();
           const assignedMatch = normalizeCode(
             info?.asignado_a_name
           ).toLowerCase();
@@ -266,7 +318,8 @@ export default function OrderPDF() {
             !codeMatch.includes(term) &&
             !descriptionMatch.includes(term) &&
             !unitMatch.includes(term) &&
-            !assignedMatch.includes(term)
+            !assignedMatch.includes(term) &&
+            !kitMatch.includes(term)
           ) {
             return false;
           }
@@ -318,7 +371,9 @@ export default function OrderPDF() {
       setIsRendering(true);
       setRenderError("");
       try {
-        const blob = await pdf(pdfLayout(pdfData)).toBlob();
+        const blob = await pdf(
+          pdfLayout(pdfData, { signaturesByUserCode: supervisorSignatures })
+        ).toBlob();
         if (cancelled) return;
         if (currentUrl) URL.revokeObjectURL(currentUrl);
         currentUrl = URL.createObjectURL(blob);
@@ -343,7 +398,7 @@ export default function OrderPDF() {
       cancelled = true;
       if (currentUrl) URL.revokeObjectURL(currentUrl);
     };
-  }, [pdfData]);
+  }, [pdfData, supervisorSignatures]);
 
   const frameStyle = useMemo(
     () => ({
@@ -659,10 +714,35 @@ const tw = createTw({
   },
 });
 
-const pdfLayout = (orders) => {
+const pdfLayout = (orders, options = {}) => {
+  const signaturesByUserCode = options.signaturesByUserCode || {};
   return (
     <Document>
       {orders.map((order) => {
+        const statusInfo = getStatusInfo(order?.info || {});
+        const supervisorCode = Number(order?.info?.asignado_por_code);
+        const supervisorSignature = Number.isFinite(supervisorCode)
+          ? signaturesByUserCode[supervisorCode]
+          : null;
+        const supervisorName = order?.info?.asignado_por_name || "";
+        const rawCompletionDate =
+          order?.info?.["F. Real de Ejecucion"] ||
+          order?.info?.["F. Real de Ejecución"] ||
+          order?.info?.fecha_fin ||
+          order?.info?.fecha_fin_estimada ||
+          "";
+        const completionDate = (() => {
+          if (!rawCompletionDate) return "";
+          const sanitized = sanitizeIsoOffset(String(rawCompletionDate).trim());
+          const parsed = new Date(sanitized);
+          if (Number.isNaN(parsed.getTime())) return formatFallbackDate(sanitized);
+          return parsed.toLocaleDateString("es-CL", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+        })();
+        const showSupervisorSignature = statusInfo.code === 2 || statusInfo.code === 3;
         return (
           <Page
             size="A4"
@@ -694,6 +774,7 @@ const pdfLayout = (orders) => {
                         })
                         .replaceAll("-", "/")
                         .replaceAll("p.", "")
+                        .replaceAll("a.", "")
                         .replaceAll("m.", "")
                         .split(",")
                         .join("   ")
@@ -766,7 +847,7 @@ const pdfLayout = (orders) => {
                           order.info.asignado_a_code +
                           " " +
                           order.info.asignado_a_name
-                        : ""}
+                        : " "}
                     </Text>
                     <Text> {order.info.Estado}</Text>
                     <Text> {order.info["F inicial"]}</Text>
@@ -815,8 +896,45 @@ const pdfLayout = (orders) => {
                   <Text wrap>{protocolo}</Text>
                 </View>
               ))}
+              {showSupervisorSignature ? (
+                <View style={tw("mt-5 pr-10 flex flex-row justify-end")}>
+                  <View style={tw("items-center")}>
+                    {supervisorSignature ? (
+                      <Image
+                        src={supervisorSignature}
+                        style={{ width: 180, height: 80, objectFit: "contain" }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 180,
+                          height: 80,
+                          borderWidth: 1,
+                          borderStyle: "dashed",
+                          borderColor: "#94a3b8",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text>Sin firma</Text>
+                      </View>
+                    )}
+                    <Text style={tw("mt-2 text-center font-bold")}>
+                      {supervisorName
+                        ? `Supervisor ${supervisorName}`
+                        : "Supervisor"}
+                    </Text>
+                    {completionDate ? (
+                      <Text style={tw("text-center text-[6px] text-slate-500")}>
+                        Fecha de realización: {completionDate}
+                      </Text>
+                    ) : null}
+                    
+                  </View>
+                </View>
+              ) : null}
               {
-                // agregar checklist de termino solo si la orden esta terminada y firmada por mantenedor y supervisor
+                // TODO: agregar checklist de termino solo si la orden esta terminada y firmada por mantenedor y supervisor
               }
             </View>
           </Page>

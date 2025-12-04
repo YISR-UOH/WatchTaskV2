@@ -114,6 +114,10 @@ const SERVICES = {
   TM: "TALLER",
   EDI: "EDIFICIO",
 };
+
+function normalizeValue(value) {
+  return String(value ?? "").trim();
+}
 function getSpecialityLabel(id) {
   if (Number.isFinite(id) && SPECIALITY_LABELS[id])
     return SPECIALITY_LABELS[id];
@@ -153,6 +157,7 @@ export default function OrdersManager() {
   const [startDateTo, setStartDateTo] = useState("");
   const [frequencyMin, setFrequencyMin] = useState("");
   const [frequencyMax, setFrequencyMax] = useState("");
+  const [kitSearch, setKitSearch] = useState("");
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -170,7 +175,8 @@ export default function OrdersManager() {
           startDateFrom ||
           startDateTo ||
           frequencyMin ||
-          frequencyMax
+          frequencyMax ||
+          kitSearch
       ),
     [
       frequencyMax,
@@ -199,6 +205,7 @@ export default function OrdersManager() {
     setStartDateTo("");
     setFrequencyMin("");
     setFrequencyMax("");
+    setKitSearch("");
   };
 
   const filteredOrders = useMemo(() => {
@@ -214,6 +221,7 @@ export default function OrdersManager() {
       frequencyMin !== "" ? Number.parseInt(frequencyMin, 10) : null;
     const maxFreq =
       frequencyMax !== "" ? Number.parseInt(frequencyMax, 10) : null;
+    const kitTerm = normalizeValue(kitSearch).toLowerCase();
 
     return orders.filter((order) => {
       const info = order?.info || {};
@@ -251,6 +259,13 @@ export default function OrdersManager() {
       if (selectService) {
         const serviceUpper = selectService.toUpperCase();
         if (machineNameUpper !== serviceUpper) {
+          return false;
+        }
+      }
+
+      if (kitTerm) {
+        const kitValue = normalizeValue(info?.["Kit de Tareas"]).toLowerCase();
+        if (!kitValue.includes(kitTerm)) {
           return false;
         }
       }
@@ -307,6 +322,7 @@ export default function OrdersManager() {
     selectService,
     startDateFrom,
     startDateTo,
+    kitSearch,
   ]);
 
   const loadOrdersData = useCallback(async () => {
@@ -633,12 +649,24 @@ export default function OrdersManager() {
               placeholder="Ej: 30"
             />
           </div>
+          <div>
+            <label
+              className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+              htmlFor="orders-filter-kit"
+            >
+              Kit de Tareas
+            </label>
+            <input
+              id="orders-filter-kit"
+              type="text"
+              className="input w-full"
+              value={kitSearch}
+              onChange={(event) => setKitSearch(event.target.value)}
+              placeholder="Buscar por kit de tareas"
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <span>
-            Los filtros de maquina y servicio son excluyentes; seleccionar uno
-            limpia el otro.
-          </span>
           {hasActiveFilters ? (
             <button
               type="button"
@@ -751,6 +779,9 @@ export default function OrdersManager() {
                                     <span className="font-mono text-xs text-slate-500">
                                       #{order.code}
                                     </span>
+                                    <span className="font-mono text-xs text-slate-500">
+                                      Frec. Dias {order.info["Frec. Dias"]}
+                                    </span>
                                     <span className="truncate text-right text-xs text-slate-500">
                                       {order.info?.["N Unidad"] ||
                                         "Unidad sin dato"}
@@ -760,6 +791,11 @@ export default function OrdersManager() {
                                     {order.info?.Descripcion ||
                                       "Sin descripcion"}
                                   </p>
+                                  <p className="mt-1 text-sm">
+                                    Kit de Tareas{" "}
+                                    {order.info["Kit de Tareas"] || " "}
+                                  </p>
+
                                   {statusKey === 3 && cancelReasons.length ? (
                                     <p
                                       className={`mt-1 text-xs ${style.metaText}`}
@@ -856,6 +892,12 @@ export default function OrdersManager() {
                             </div>
                             <p className="mt-1 text-sm">
                               {order.info?.Descripcion || "Sin descripcion"}
+                            </p>
+                            <p className="mt-1 text-sm">
+                              Frec. Dias {order.info["Frec. Dias"] || " "}
+                            </p>
+                            <p className="mt-1 text-sm">
+                              Kit de Tareas {order.info["Kit de Tareas"] || " "}
                             </p>
                             <p className={`text-xs ${style.metaText}`}>
                               Estado:{" "}

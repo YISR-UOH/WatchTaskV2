@@ -1,0 +1,56 @@
+%%{init: {
+  'theme': 'neutral',
+  'themeVariables': {
+    'fontSize': '28px',
+    'primaryColor': '#e3f2fd',
+    'primaryBorderColor': '#1565c0',
+    'primaryTextColor': '#0d47a1'
+  },
+  'flowchart': {
+    'curve': 'linear',
+    'nodeSpacing': 120,
+    'rankSpacing': 110,
+    'htmlLabels': true
+  }
+} }%%
+flowchart TB
+  %% Flujo principal numerado (rectángulos con ancho fijo para evitar salto de línea vertical)
+  A1["<div style='width:360px; white-space:normal'>1. Inicio de jornada</div>"]
+  A2["<div style='width:360px; white-space:normal'>2. Encargado imprime órdenes: JD Edwards</div>"]
+  A3["<div style='width:360px; white-space:normal'>3. Entrega física a supervisores</div>"]
+  A4["<div style='width:360px; white-space:normal'>4. Agrupación por máquina / trabajo</div>"]
+  A5["<div style='width:360px; white-space:normal'>5. Distribución manual a mantenedores</div>"]
+  A6["<div style='width:360px; white-space:normal'>6. Ejecución de tareas en campo</div>"]
+  A7["<div style='width:360px; white-space:normal'>7. Registro de hallazgos en papel</div>"]
+  A8["<div style='width:360px; white-space:normal'>8. Recolección de formularios fin de turno</div>"]
+  A9["<div style='width:360px; white-space:normal'>9. Revisión y consolidación por supervisor</div>"]
+  A10["<div style='width:360px; white-space:normal'>10. Transcripción parcial a JD Edwards</div>"]
+  A11["<div style='width:360px; white-space:normal'>11. Almacenamiento físico disperso</div>"]
+
+    A1 --> A2 --> A3 --> A4 --> A5 --> A6 --> A7 --> A8 --> A9 --> A10 --> A11
+
+    %% Problemas asociados (subgrafo separado)
+    subgraph P[Problemas identificados]
+      P1[Pérdida de registros]
+      P2[Retrasos en distribución]
+      P3[Reprocesos / Doble transcripción]
+      P4[Sin visibilidad tiempo real]
+      P5[Trazabilidad fragmentada]
+    end
+
+    A5 -.-> P2
+    A7 -.-> P1
+    A10 -.-> P3
+    A6 -.-> P4
+    A11 -.-> P5
+
+    %% Estilos sobrios
+  classDef step fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+  classDef problem fill:#ffefef,stroke:#d9534f,color:#a94442;
+  linkStyle default stroke-width:3px;
+    class A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11 step;
+    class P1,P2,P3,P4,P5 problem;
+
+    %% Resumen final
+  R["<div style='width:420px; white-space:normal'>Cadena operativa manual con múltiples puntos de pérdida y latencia acumulada</div>"]
+    A11 --> R
