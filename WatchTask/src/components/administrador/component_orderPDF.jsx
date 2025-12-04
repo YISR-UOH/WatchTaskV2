@@ -716,6 +716,43 @@ const tw = createTw({
 
 const pdfLayout = (orders, options = {}) => {
   const signaturesByUserCode = options.signaturesByUserCode || {};
+  const renderSignatureBlock = ({
+    signature,
+    rolePrefix,
+    name,
+    completionDate,
+  }) => (
+    <View style={tw("items-center")}>
+      {signature ? (
+        <Image
+          src={signature}
+          style={{ width: 180, height: 80, objectFit: "contain" }}
+        />
+      ) : (
+        <View
+          style={{
+            width: 180,
+            height: 80,
+            borderWidth: 1,
+            borderStyle: "dashed",
+            borderColor: "#94a3b8",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text>Sin firma</Text>
+        </View>
+      )}
+      <Text style={tw("mt-2 text-center font-bold")}>
+        {name ? `${rolePrefix} ${name}` : rolePrefix}
+      </Text>
+      {completionDate ? (
+        <Text style={tw("text-center text-[6px] text-slate-500")}>
+          Fecha de realización: {completionDate}
+        </Text>
+      ) : null}
+    </View>
+  );
   return (
     <Document>
       {orders.map((order) => {
@@ -725,6 +762,11 @@ const pdfLayout = (orders, options = {}) => {
           ? signaturesByUserCode[supervisorCode]
           : null;
         const supervisorName = order?.info?.asignado_por_name || "";
+        const maintainerCode = Number(order?.info?.asignado_a_code);
+        const maintainerSignature = Number.isFinite(maintainerCode)
+          ? signaturesByUserCode[maintainerCode]
+          : null;
+        const maintainerName = order?.info?.asignado_a_name || "";
         const rawCompletionDate =
           order?.info?.["F. Real de Ejecucion"] ||
           order?.info?.["F. Real de Ejecución"] ||
@@ -742,7 +784,8 @@ const pdfLayout = (orders, options = {}) => {
             year: "numeric",
           });
         })();
-        const showSupervisorSignature = statusInfo.code === 2 || statusInfo.code === 3;
+        const showSignaturesSection =
+          statusInfo.code === 2 || statusInfo.code === 3;
         return (
           <Page
             size="A4"
@@ -896,40 +939,21 @@ const pdfLayout = (orders, options = {}) => {
                   <Text wrap>{protocolo}</Text>
                 </View>
               ))}
-              {showSupervisorSignature ? (
-                <View style={tw("mt-5 pr-10 flex flex-row justify-end")}>
-                  <View style={tw("items-center")}>
-                    {supervisorSignature ? (
-                      <Image
-                        src={supervisorSignature}
-                        style={{ width: 180, height: 80, objectFit: "contain" }}
-                      />
-                    ) : (
-                      <View
-                        style={{
-                          width: 180,
-                          height: 80,
-                          borderWidth: 1,
-                          borderStyle: "dashed",
-                          borderColor: "#94a3b8",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Text>Sin firma</Text>
-                      </View>
-                    )}
-                    <Text style={tw("mt-2 text-center font-bold")}>
-                      {supervisorName
-                        ? `Supervisor ${supervisorName}`
-                        : "Supervisor"}
-                    </Text>
-                    {completionDate ? (
-                      <Text style={tw("text-center text-[6px] text-slate-500")}>
-                        Fecha de realización: {completionDate}
-                      </Text>
-                    ) : null}
-                    
+              {showSignaturesSection ? (
+                <View style={tw(" pr-5 flex flex-row justify-end")}>
+                  <View style={tw("flex flex-row gap-x-10")}>
+                    {renderSignatureBlock({
+                      signature: maintainerSignature,
+                      rolePrefix: "Mantenedor",
+                      name: maintainerName,
+                      completionDate,
+                    })}
+                    {renderSignatureBlock({
+                      signature: supervisorSignature,
+                      rolePrefix: "Supervisor",
+                      name: supervisorName,
+                      completionDate,
+                    })}
                   </View>
                 </View>
               ) : null}
